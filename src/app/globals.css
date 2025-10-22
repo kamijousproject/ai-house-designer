@@ -1,0 +1,117 @@
+:root { 
+  --fs-accent:#7bf0ff; 
+  --fs-grad1:#7bf0ff; 
+  --fs-grad2:#8e7bff; 
+}
+
+body { 
+  font-family: 'Kanit', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans Thai', sans-serif; 
+}
+
+.navbar { 
+  background: radial-gradient(1200px 300px at 30% -100px, rgba(126,255,240,.25), transparent 60%), #0f1115; 
+}
+
+.hero-wrap { 
+  position:relative; 
+  padding:64px 0 32px;
+}
+
+.hero-bg { 
+  position:absolute; 
+  inset:0; 
+  background:
+    radial-gradient(800px 300px at 80% -50px, rgba(142,123,255,.25), transparent 60%),
+    radial-gradient(900px 260px at 10% 0, rgba(123,240,255,.18), transparent 60%); 
+  z-index:-1;
+}
+
+.pill { 
+  background: rgba(255,255,255,.08); 
+  border-radius:999px; 
+  padding:.5rem .875rem; 
+}
+
+.grad-text { 
+  background: linear-gradient(90deg, var(--fs-grad1), var(--fs-grad2)); 
+  -webkit-background-clip:text; 
+  background-clip:text; 
+  color:transparent;
+}
+
+.btn-cta { 
+  background: linear-gradient(90deg, var(--fs-grad1), var(--fs-grad2)); 
+  border:none; 
+  color:#0b1020; 
+  font-weight:700;
+}
+
+.btn-ghost { 
+  border:1px solid rgba(255,255,255,.2); 
+  color:#e9f5ff; 
+  background:transparent; 
+}
+
+.small-muted { 
+  color:#aab3c2; 
+}
+
+.feature-card { 
+  display:block; 
+  padding:1rem; 
+  background:#121520; 
+  border:1px solid rgba(255,255,255,.08); 
+  border-radius:1rem; 
+  height:100%; 
+  text-decoration:none; 
+  color:inherit;
+}
+
+.feature-card:hover { 
+  border-color: rgba(123,240,255,.5); 
+  transform: translateY(-2px); 
+  transition: .2s ease; 
+}
+
+.icon-wrap { 
+  width:42px; 
+  height:42px; 
+  display:grid; 
+  place-items:center; 
+  background: rgba(123,240,255,.15); 
+  border-radius:.75rem; 
+  margin-bottom:.5rem;
+}
+
+.object-cover { 
+  object-fit:cover; 
+}
+
+.hero-gallery { 
+  position:relative; 
+  border-radius:1rem; 
+  overflow:hidden; 
+  background:#0b0e14; 
+}
+
+.overlay-choose { 
+  position:absolute; 
+  inset:auto 0 0 0; 
+  display:flex; 
+  justify-content:space-between; 
+  align-items:center; 
+  gap:.5rem; 
+  padding:.5rem .75rem; 
+  background: linear-gradient(0deg, rgba(0,0,0,.65), transparent); 
+}
+
+.choose-style-btn { 
+  backdrop-filter: blur(6px); 
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carousel, .carousel * { 
+    transition:none !important; 
+    animation-duration: 0.001s !important; 
+  }
+}

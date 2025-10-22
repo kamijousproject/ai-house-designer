@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BOQ — AI House Designer</title>
+
+  <!-- CSS & Fonts -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="./assets/css/app.css" rel="stylesheet">
+
+  <style>
+    body{font-family:'Kanit',sans-serif}
+    .small-muted{color:#64748b}
+    .pill{border-radius:999px}
+    .table thead th{background:#f1f5f9}
+    #boqTable input.rate{max-width:120px}
+    .metric-badges .badge{background:#e2f2ff;color:#0b65c2;border-radius:999px}
+    @media (prefers-color-scheme: dark){
+      .table thead th{background:#0f1629}
+    }
+  </style>
+</head>
+<body data-page="boq">
+<!-- Navbar -->
+<header>
+  <nav class="navbar navbar-expand-lg navbar-dark" style="background:linear-gradient(90deg,#0ea5e9,#6366f1)">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="/ai-house-designer/index.html">
+        <i class="fa-solid fa-house-chimney-window me-2"></i>Forward Studio
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="topNav">
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/index.html">หน้าแรก</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/designer.html">Designer</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/plan.html">แบบแปลน</a></li>
+          <li class="nav-item"><a class="nav-link active" href="/ai-house-designer/boq.html">BOQ</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/map.html">แผนที่/แดดลม</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/feng.html">ฮวงจุ้ย</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/permit.html">ขออนุญาต</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/loan.html">สินเชื่อ</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<div class="container py-4">
+  <div class="row g-3">
+    <!-- ซ้าย: ตั้งค่าพื้นฐาน -->
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-2"><i class="fa-solid fa-table-list me-2"></i>ตั้งค่า BOQ</h5>
+
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label">กว้างที่ดิน (ม.)</label>
+              <input id="plotW" type="number" class="form-control" value="12" step="0.1">
+            </div>
+            <div class="col-6">
+              <label class="form-label">ยาวที่ดิน (ม.)</label>
+              <input id="plotL" type="number" class="form-control" value="20" step="0.1">
+            </div>
+
+            <div class="col-6">
+              <label class="form-label">จำนวนชั้น</label>
+              <select id="floors" class="form-select"><option>1</option><option selected>2</option><option>3</option></select>
+            </div>
+            <div class="col-6">
+              <label class="form-label">สูง/ชั้น (ม.)</label>
+              <input id="floorH" type="number" class="form-control" value="3" step="0.1">
+            </div>
+
+            <div class="col-6">
+              <label class="form-label">หลังคา</label>
+              <select id="roofType" class="form-select">
+                <option value="gable">จั่ว</option>
+                <option value="hip">ปั้นหยา</option>
+                <option value="shed">เพิงหมาแหงน</option>
+                <option value="flat">ดาดฟ้า</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label">สไตล์บ้าน</label>
+              <select id="styleSel" class="form-select"></select>
+              <div id="styleDesc" class="small-muted mt-1"></div>
+            </div>
+
+            <div class="col-12">
+              <div class="form-check">
+                <input id="floodRisk" class="form-check-input" type="checkbox">
+                <label class="form-check-label" for="floodRisk">พื้นที่เสี่ยงน้ำท่วม</label>
+              </div>
+              <div class="form-check">
+                <input id="softSoil" class="form-check-input" type="checkbox">
+                <label class="form-check-label" for="softSoil">ดินอ่อน (พิจารณาเสาเข็ม/ฐานราก)</label>
+              </div>
+            </div>
+
+            <div class="col-6">
+              <label class="form-label">Overhead (%)</label>
+              <input id="ohPct" type="number" class="form-control" value="30" step="1" min="0" max="100">
+            </div>
+            <div class="col-6">
+              <label class="form-label">VAT (%)</label>
+              <div class="input-group">
+                <input id="vatPct" type="number" class="form-control" value="7" step="0.1" min="0" max="20">
+                <span class="input-group-text">
+                  <input id="vatOn" class="form-check-input mt-0" type="checkbox" checked title="คิด VAT">
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <hr>
+          <div class="d-grid gap-2">
+            <button id="btnPull" class="btn btn-outline-secondary pill">
+              <i class="fa-solid fa-plug-circle-check me-2"></i>ดึงค่าจาก Designer
+            </button>
+            <button id="btnResetRate" class="btn btn-outline-warning pill">
+              <i class="fa-solid fa-rotate-left me-2"></i>รีเซ็ตราคามาตรฐาน
+            </button>
+            <button id="btnSaveRate" class="btn btn-outline-dark pill">
+              <i class="fa-solid fa-floppy-disk me-2"></i>บันทึกราคาปัจจุบัน
+            </button>
+          </div>
+
+          <div class="small-muted mt-3">
+            * ตัวเลขเป็นการประเมินเบื้องต้นจากสูตรมาตรฐาน อาจต่างตามพื้นที่/สเปค/ช่วงเวลา
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ขวา: ตาราง BOQ -->
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex flex-wrap justify-content-between align-items-center">
+            <div class="metric-badges d-flex flex-wrap gap-2">
+              <span class="badge"><i class="fa-regular fa-square me-1"></i>พื้นที่ใช้สอย ~ <span id="areaBadge">0</span> ตร.ม.</span>
+              <span class="badge"><i class="fa-solid fa-house-chimney me-1"></i>สไตล์: <span id="styleBadge">-</span></span>
+              <span class="badge"><i class="fa-solid fa-water me-1"></i><span id="riskBadge">ความเสี่ยง: ปกติ</span></span>
+            </div>
+            <div class="d-flex gap-2">
+              <button id="btnCSV" class="btn btn-outline-success btn-sm pill"><i class="fa-solid fa-file-csv me-1"></i>ดาวน์โหลด CSV</button>
+              <button id="btnPrint" class="btn btn-outline-secondary btn-sm pill"><i class="fa-solid fa-print me-1"></i>พิมพ์/บันทึก PDF</button>
+            </div>
+          </div>
+
+          <div class="table-responsive mt-3">
+            <table class="table table-sm align-middle" id="boqTable">
+              <thead>
+                <tr>
+                  <th style="width:52px">#</th>
+                  <th>รายการงาน</th>
+                  <th class="text-end" style="width:140px">ปริมาณ</th>
+                  <th style="width:80px">หน่วย</th>
+                  <th class="text-end" style="width:160px">ราคา/หน่วย (บาท)</th>
+                  <th class="text-end" style="width:160px">ราคารวม (บาท)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot>
+                <tr class="table-light">
+                  <th colspan="5" class="text-end">รวมค่าวัสดุ/งานโดยประมาณ</th>
+                  <th class="text-end" id="sumMat">0</th>
+                </tr>
+                <tr class="table-light">
+                  <th colspan="5" class="text-end">+ ค่าดำเนินการ/กำไร (OH <span id="ohLabel">30</span>%)</th>
+                  <th class="text-end" id="sumOH">0</th>
+                </tr>
+                <tr class="table-primary">
+                  <th colspan="5" class="text-end">รวมก่อนภาษี</th>
+                  <th class="text-end" id="sumPreVat">0</th>
+                </tr>
+                <tr class="table-light">
+                  <th colspan="5" class="text-end">+ VAT <span id="vatLabel">7</span>%</th>
+                  <th class="text-end" id="sumVAT">0</th>
+                </tr>
+                <tr class="table-success">
+                  <th colspan="5" class="text-end">รวมสุทธิ</th>
+                  <th class="text-end" id="sumAll">0</th>
+                </tr>
+                <tr>
+                  <th colspan="5" class="text-end small-muted">ต้นทุนเฉลี่ยต่อ ตร.ม.</th>
+                  <th class="text-end small-muted" id="costPerSqm">0</th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div class="small-muted">
+            หมายเหตุ: ปรับ "ราคา/หน่วย" ให้เหมาะกับพื้นที่และสเปควัสดุจริง เอกสารนี้เพื่อการวางแนวคิดเบื้องต้นเท่านั้น
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="text-center py-4 small-muted">
+  Copyright © <strong>Forward Studio</strong> — สงวนลิขสิทธิ์
+</footer>
+
+<!-- JS libs -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Page JS -->
+<script>
+(function(){
+  const $  = s => document.querySelector(s);
+  const $$ = s => document.querySelectorAll(s);
+  const num  = v => Number.parseFloat(v||0) || 0;
+  const nice = n => (n??0).toLocaleString('th-TH', {maximumFractionDigits:0});
+
+  /* ---- Styles + Preset Multipliers ---- */
+  const STYLES = [
+    { id:'modern',       name:'โมเดิร์น (Modern)',        desc:'เรียบง่าย ทันสมัย' },
+    { id:'contemporary', name:'ร่วมสมัย (Contemporary)',  desc:'ผสมคลาสสิกกับโมเดิร์น' },
+    { id:'classic',      name:'คลาสสิก (Classic)',        desc:'หรูหรา ประณีต' },
+    { id:'loft',         name:'ลอฟท์ (Loft)',             desc:'ดิบ โชว์โครงสร้าง' },
+    { id:'nordic',       name:'นอร์ดิก (Nordic)',          desc:'สีอ่อน ไม้ธรรมชาติ' },
+    { id:'minimal',      name:'มินิมอล (Minimalist)',      desc:'น้อยแต่มาก' },
+    { id:'thai_oriental',name:'ไทยประยุกต์ (Thai Oriental)',desc:'ไทยร่วมสมัย' },
+    { id:'colonial',     name:'โคโลเนียล (Colonial)',     desc:'ยุโรปคลาสสิก' },
+    { id:'natural',      name:'เนเชอรัล (Natural)',       desc:'กลมกลืนธรรมชาติ' },
+    { id:'tropical',     name:'ทรอปิคอล (Tropical)',       desc:'โปร่ง โล่ง' },
+    { id:'vintage',      name:'วินเทจ (Vintage)',          desc:'ย้อนยุค' },
+    { id:'luxury',       name:'ลักซ์ชัวรี่ (Luxury)',      desc:'วัสดุพรีเมียม' },
+    { id:'retro',        name:'เรโทร (Retro)',             desc:'สี/ลายจัดจ้าน' },
+    { id:'thai',         name:'ทรงไทย (Thai)',             desc:'เอกลักษณ์ไทย' }
+  ];
+
+  const STYLE_RATE = {
+    luxury: { all:1.12, finish:1.20, doors:1.15 },
+    loft:   { steel:1.08, plaster:0.80, paint:0.90 },
+    minimal:{ finish:0.95 },
+    classic:{ finish:1.10, doors:1.10 },
+    colonial:{ finish:1.12, doors:1.08 },
+    tropical:{ roof:1.08,  doors:1.05 },
+    nordic: { finish:1.07 },
+    natural:{ finish:1.05, doors:1.05 },
+    thai_oriental:{ roof:1.05, doors:1.07 },
+    thai:   { roof:1.06, doors:1.07 },
+    vintage:{ finish:1.05 },
+    retro:  { finish:1.06 },
+    contemporary:{ finish:1.05 },
+    modern: {}
+  };
+
+  /* ---- Read & Compute ---- */
+  function baseDims(cfg){
+    const bldW = Math.min(cfg.plotW*0.8, Math.max(1, cfg.plotW-2));
+    const bldL = Math.min(cfg.plotL*0.7, Math.max(1, cfg.plotL-3));
+    return { bldW, bldL };
+  }
+  function compute(cfg){
+    const { bldW, bldL } = baseDims(cfg);
+    const area     = bldW*bldL*cfg.floors;
+    const wallArea = ((bldW*2 + bldL*2) * cfg.floorH) * cfg.floors * 0.9; // ช่องเปิด ~10%
+    const roofFactor = (cfg.roofType==='hip'||cfg.roofType==='gable')?1.15:(cfg.roofType==='shed'?1.1:1.0);
+    const roofArea = bldW*bldL*roofFactor;
+    return { bldW, bldL, area, wallArea, roofArea };
+  }
+
+  function readCfg(){
+    return {
+      plotW:   num($('#plotW').value),
+      plotL:   num($('#plotL').value),
+      floors:  Math.max(1, parseInt($('#floors').value,10)||1),
+      floorH:  num($('#floorH').value),
+      roofType:$('#roofType').value,
+      style:   $('#styleSel').value || 'modern',
+      floodRisk: $('#floodRisk').checked,
+      softSoil:  $('#softSoil').checked,
+      ohPct:   Math.max(0, num($('#ohPct').value))/100,
+      vatPct:  Math.max(0, num($('#vatPct').value))/100,
+      vatOn:   $('#vatOn').checked
+    };
+  }
+
+  /* ---- Rows + Rates ---- */
+  function defaultRows(q){
+    return [
+      {no:1,  key:'concrete', name:'คอนกรีตฐานราก/พื้น/คาน', qty:(q.area*0.10), unit:'ลบ.ม.', rate:2500},
+      {no:2,  key:'steel',    name:'เหล็กเสริมโครงสร้าง',    qty:(q.area*25/1000), unit:'ตัน',   rate:35000},
+      {no:3,  key:'brick',    name:'อิฐก่อผนัง',               qty:q.wallArea*110/1000, unit:'พันก้อน', rate:6500},
+      {no:4,  key:'plaster',  name:'ปูนก่อฉาบ/ทราย/หิน (ก่อฉาบ)', qty:q.wallArea*0.035, unit:'ตัน', rate:2200},
+      {no:5,  key:'plaster',  name:'งานฉาบผนัง 2 ด้าน',        qty:q.wallArea, unit:'ตร.ม.', rate:160},
+      {no:6,  key:'roof',     name:'หลังคา (แผ่น/โครงหลังคา)', qty:q.roofArea, unit:'ตร.ม.', rate:900},
+      {no:7,  key:'finish',   name:'กระเบื้องพื้น',            qty:q.area*0.85, unit:'ตร.ม.', rate:450},
+      {no:8,  key:'paint',    name:'ทาสีภายใน/ภายนอก',         qty:q.wallArea*1.4, unit:'ตร.ม.', rate:120},
+      {no:9,  key:'doors',    name:'ประตู/หน้าต่าง (รวมอุปกรณ์)', qty:Math.max(6, Math.round(q.area/25)), unit:'ชุด', rate:4500},
+      {no:10, key:'mep',      name:'ระบบไฟฟ้า/ประปา (เหมาจร.)', qty:q.area, unit:'ตร.ม.', rate:700},
+    ];
+  }
+
+  function applyStyleMultipliers(rows, styleId){
+    const mul = STYLE_RATE[styleId] || {};
+    rows.forEach(r=>{
+      let f = 1;
+      if(mul.all) f *= mul.all;
+      if(mul[r.key]) f *= mul[r.key];
+      if(r.key==='finish' && mul.finish) f *= mul.finish;
+      if(r.key==='doors'  && mul.doors)  f *= mul.doors;
+      if(r.key==='roof'   && mul.roof)   f *= mul.roof;
+      r.rate = Math.round(r.rate * f);
+    });
+  }
+
+  function applyRiskFactors(rows, cfg){
+    if(cfg.softSoil){ // ดินอ่อน → โครงสร้าง
+      const r = rows.find(x=>x.key==='concrete');
+      if(r) r.rate = Math.round(r.rate * 1.15);
+    }
+    if(cfg.floodRisk){ // น้ำท่วม → หลังคา/วัสดุ
+      const r = rows.find(x=>x.key==='roof');
+      if(r) r.rate = Math.round(r.rate * 1.10);
+    }
+  }
+
+  /* ---- Persist custom rates ---- */
+  const RATE_KEY = 'fs_boq_rate_overrides';
+  function saveRates(rows){
+    const data = {}; rows.forEach(r=> data[r.key] = r.rate);
+    localStorage.setItem(RATE_KEY, JSON.stringify(data));
+  }
+  function loadRates(){
+    try{ return JSON.parse(localStorage.getItem(RATE_KEY)||'{}'); }catch(e){ return {}; }
+  }
+  function applySavedRates(rows){
+    const saved = loadRates();
+    rows.forEach(r=>{
+      if(typeof saved[r.key] !== 'undefined'){
+        r.rate = num(saved[r.key]);
+      }
+    });
+  }
+
+  /* ---- Fill style select ---- */
+  function fillStyleSelect(){
+    const sel = $('#styleSel'); if(!sel) return;
+    sel.innerHTML = STYLES.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+    let saved = 'modern';
+    try{ saved = localStorage.getItem('fs_style') || 'modern'; }catch(e){}
+    sel.value = saved;
+    const cur = STYLES.find(x=>x.id===saved);
+    $('#styleDesc').textContent = cur?.desc || '';
+  }
+
+  /* ---- Pull from Designer ---- */
+  function pullFromDesigner(){
+    try{
+      const cfg = JSON.parse(localStorage.getItem('fs_house_cfg')||'{}');
+      if(cfg.plotW)   $('#plotW').value = cfg.plotW;
+      if(cfg.plotL)   $('#plotL').value = cfg.plotL;
+      if(cfg.floors)  $('#floors').value = cfg.floors;
+      if(cfg.floorH)  $('#floorH').value = cfg.floorH;
+      if(cfg.roofType)$('#roofType').value = cfg.roofType;
+      if(typeof cfg.floodRisk!=='undefined') $('#floodRisk').checked = !!cfg.floodRisk;
+      if(typeof cfg.softSoil!=='undefined')  $('#softSoil').checked  = !!cfg.softSoil;
+    }catch(e){}
+    try{
+      const s = localStorage.getItem('fs_style');
+      if(s){ $('#styleSel').value = s; const cur = STYLES.find(x=>x.id===s); $('#styleDesc').textContent = cur?.desc||''; }
+    }catch(e){}
+    rebuild();
+  }
+
+  /* ---- Render table ---- */
+  let CURRENT_ROWS = [];
+  function renderTable(rows, metrics, cfg){
+    const tbody = $('#boqTable tbody'); tbody.innerHTML = '';
+    let i=1, sum=0;
+
+    rows.forEach(r=>{
+      const total = r.qty * r.rate; sum += total;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i++}</td>
+        <td>${r.name}</td>
+        <td class="text-end">${r.qty.toFixed(2)}</td>
+        <td>${r.unit}</td>
+        <td class="text-end"><input type="number" class="form-control form-control-sm text-end rate" value="${r.rate}" data-key="${r.key}"></td>
+        <td class="text-end total">${nice(total)}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    // recalc on rate change
+    tbody.addEventListener('input', e=>{
+      const input = e.target.closest('input.rate'); if(!input) return;
+      const key = input.dataset.key;
+      const row = rows.find(x=>x.key===key);
+      row.rate = num(input.value);
+      // update totals
+      let s=0;
+      [...tbody.querySelectorAll('tr')].forEach((tr,idx)=>{
+        const rr = rows[idx];
+        const total = rr.qty * rr.rate;
+        tr.querySelector('.total').textContent = nice(total);
+        s += total;
+      });
+      updateFooters(s, cfg, metrics.area);
+    }, {once:true}); // bind once then we manually recompute above again on each input via closure
+
+    updateFooters(sum, cfg, metrics.area);
+
+    // badges
+    $('#areaBadge').textContent = nice(Math.round(metrics.area));
+    $('#styleBadge').textContent = STYLES.find(x=>x.id===cfg.style)?.name || cfg.style;
+    $('#riskBadge').textContent = (cfg.floodRisk||cfg.softSoil)
+      ? `${cfg.floodRisk?'น้ำท่วม':''}${(cfg.floodRisk&&cfg.softSoil)?' · ':''}${cfg.softSoil?'ดินอ่อน':''}`
+      : 'ความเสี่ยง: ปกติ';
+
+    CURRENT_ROWS = rows;
+  }
+
+  function updateFooters(sum, cfg, area){
+    const oh = sum * cfg.ohPct;
+    const preVat = sum + oh;
+    const vat = cfg.vatOn ? preVat * cfg.vatPct : 0;
+    const grand = preVat + vat;
+    $('#sumMat').textContent   = nice(Math.round(sum));
+    $('#ohLabel').textContent  = Math.round(cfg.ohPct*100);
+    $('#sumOH').textContent    = nice(Math.round(oh));
+    $('#sumPreVat').textContent= nice(Math.round(preVat));
+    $('#vatLabel').textContent = Math.round(cfg.vatPct*100);
+    $('#sumVAT').textContent   = nice(Math.round(vat));
+    $('#sumAll').textContent   = nice(Math.round(grand));
+    $('#costPerSqm').textContent = area>0 ? nice(Math.round(grand/area)) : '0';
+  }
+
+  /* ---- Build (recompute rows) ---- */
+  function rebuild(){
+    const cfg = readCfg();
+    const q = compute(cfg);
+    let rows = defaultRows(q);
+
+    // apply style + risk + saved rate overrides
+    applyStyleMultipliers(rows, cfg.style);
+    applyRiskFactors(rows, cfg);
+    applySavedRates(rows);
+
+    renderTable(rows, q, cfg);
+  }
+
+  /* ---- Export CSV ---- */
+  function exportCSV(){
+    const rows = [['ลำดับ','รายการงาน','ปริมาณ','หน่วย','ราคา/หน่วย(บาท)','ราคารวม(บาท)']];
+    const tb = $('#boqTable tbody');
+    tb.querySelectorAll('tr').forEach((tr,i)=>{
+      const tds = tr.querySelectorAll('td');
+      const qty   = tds[2].textContent.trim();
+      const unit  = tds[3].textContent.trim();
+      const rate  = tr.querySelector('.rate').value;
+      const total = tds[5].textContent.replaceAll(',','');
+      rows.push([i+1, tds[1].textContent.trim(), qty, unit, rate, total]);
+    });
+    const csv = rows.map(r=>r.map(v=>`"${(v+'').replaceAll('"','""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'boq_forward_studio.csv';
+    a.click();
+  }
+
+  /* ---- UI events ---- */
+  function boot(){
+    // style select
+    fillStyleSelect();
+
+    // build initial
+    rebuild();
+
+    // listeners
+    ['plotW','plotL','floors','floorH','roofType','styleSel','floodRisk','softSoil','ohPct','vatPct','vatOn']
+      .forEach(id=>{
+        const el = document.getElementById(id); if(!el) return;
+        el.addEventListener('input', ()=>{ rebuild(); });
+        el.addEventListener('change', ()=>{ rebuild(); });
+      });
+
+    $('#btnPull').addEventListener('click', pullFromDesigner);
+    $('#btnCSV').addEventListener('click', exportCSV);
+    $('#btnPrint').addEventListener('click', ()=>window.print());
+    $('#btnResetRate').addEventListener('click', ()=>{
+      localStorage.removeItem(RATE_KEY);
+      rebuild();
+    });
+    $('#btnSaveRate').addEventListener('click', ()=>{
+      saveRates(CURRENT_ROWS);
+      // feedback เล็กน้อย
+      const btn = $('#btnSaveRate');
+      const old = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-check me-2"></i>บันทึกแล้ว';
+      setTimeout(()=>btn.innerHTML=old,1400);
+    });
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+
+</body>
+</html>

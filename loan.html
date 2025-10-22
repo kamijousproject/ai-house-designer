@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ขอสินเชื่อ/คำนวณผ่อน — AI House Designer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" charset="utf-8">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body{font-family:'Kanit',sans-serif;background:#f6f8fb}
+    .navbar{background:linear-gradient(90deg,#0ea5e9,#6366f1)}
+    .navbar .nav-link,.navbar-brand{color:#fff!important}
+    .pill{border-radius:999px}
+    .card{border:0;box-shadow:0 8px 24px rgba(15,23,42,.06);border-radius:16px}
+    .small-muted{color:#64748b}
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="./"><i class="fa-solid fa-house-chimney-window me-2"></i>AI ออกแบบสร้างบ้าน</a>
+    <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navMain"><span class="navbar-toggler-icon"></span></button>
+    <div class="collapse navbar-collapse" id="navMain">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="./designer.html">ออกแบบ</a></li>
+        <li class="nav-item"><a class="nav-link" href="./boq.html">BOQ</a></li>
+        <li class="nav-item"><a class="nav-link" href="./permit.html">ขออนุญาต</a></li>
+        <li class="nav-item"><a class="nav-link active" href="./loan.html">สินเชื่อ</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4">
+  <div class="row g-3">
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-2"><i class="fa-solid fa-calculator me-2"></i>คำนวณเบื้องต้น</h5>
+          <div class="row g-2">
+            <div class="col-12">
+              <label class="form-label">ราคาบ้าน/โครงการ (บาท)</label>
+              <input id="price" type="number" class="form-control" value="3000000" step="10000">
+            </div>
+            <div class="col-12">
+              <label class="form-label">เงินดาวน์ (บาท)</label>
+              <input id="down" type="number" class="form-control" value="300000" step="10000">
+            </div>
+            <div class="col-6">
+              <label class="form-label">ดอกเบี้ยต่อปี (%)</label>
+              <input id="rate" type="number" class="form-control" value="5.5" step="0.01">
+            </div>
+            <div class="col-6">
+              <label class="form-label">ระยะเวลาผ่อน (ปี)</label>
+              <input id="years" type="number" class="form-control" value="20" step="1" min="1">
+            </div>
+            <div class="col-12">
+              <label class="form-label">ค่าธรรมเนียม/ประกัน (บาท, รวม)</label>
+              <input id="fee" type="number" class="form-control" value="0" step="1000">
+            </div>
+          </div>
+          <div class="d-grid gap-2 mt-3">
+            <button id="btnCalc" class="btn btn-primary pill"><i class="fa-solid fa-equals me-2"></i>คำนวณ</button>
+            <button id="btnCSV" class="btn btn-outline-success pill"><i class="fa-solid fa-file-csv me-2"></i>ดาวน์โหลดตาราง CSV</button>
+            <a class="btn btn-outline-dark pill" href="./designer.html"><i class="fa-solid fa-wand-magic-sparkles me-2"></i>กลับไปออกแบบบ้าน</a>
+          </div>
+          <div class="small-muted mt-2">ตัวเลขเพื่อการประมาณการเบื้องต้น เงื่อนไขจริงขึ้นกับธนาคาร</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-2">ผลการคำนวณ</h5>
+          <div class="row g-2">
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-3">
+                <div class="small-muted">วงเงินกู้สุทธิ (บาท)</div>
+                <div class="fs-4" id="pv">0</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-3">
+                <div class="small-muted">ค่างวด/เดือน (บาท)</div>
+                <div class="fs-4" id="pmt">0</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-3">
+                <div class="small-muted">ดอกเบี้ยรวม (บาท)</div>
+                <div class="fs-5" id="intTotal">0</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 bg-light rounded-3">
+                <div class="small-muted">ยอดรวมชำระตลอดสัญญา (บาท)</div>
+                <div class="fs-5" id="sumTotal">0</div>
+              </div>
+            </div>
+          </div>
+
+          <hr>
+          <h6 class="mb-2">ตารางผ่อน (12 งวดแรก)</h6>
+          <div class="table-responsive">
+            <table class="table table-sm" id="amortTable">
+              <thead>
+                <tr>
+                  <th>งวด</th>
+                  <th class="text-end">ค่างวด</th>
+                  <th class="text-end">เงินต้น</th>
+                  <th class="text-end">ดอกเบี้ย</th>
+                  <th class="text-end">ยอดคงเหลือ</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="alert alert-info mt-2">
+            ต้องการติดต่อธนาคาร? เตรียมเอกสารรายได้/เครดิตเบื้องต้น แล้วเลือกธนาคารที่สนใจจากเว็บไซต์ธนาคารโดยตรง
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer class="text-center py-4 text-muted small">
+  Copyright © <strong>Forward Studio</strong>
+</footer>
+
+<script charset="utf-8" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function(){
+  const $ = s=>document.querySelector(s);
+  const nice = n => (n??0).toLocaleString('th-TH',{maximumFractionDigits:0});
+
+  function calc(){
+    const price = parseFloat($('#price').value||0);
+    const down  = parseFloat($('#down').value||0);
+    const rateY = parseFloat($('#rate').value||0);
+    const years = parseInt($('#years').value||0,10);
+    const fee   = parseFloat($('#fee').value||0);
+
+    const pv = Math.max(0, price - down) + Math.max(0, fee);
+    const n  = Math.max(1, years*12);
+    const r  = rateY/100/12;
+
+    // PMT formula
+    const pmt = r>0 ? (r*pv)/(1 - Math.pow(1+r, -n)) : (pv/n);
+
+    // build first 12 months amortization (approx standard amortization schedule)
+    let bal = pv, rows = [], intTotal = 0;
+    for(let i=1;i<=n;i++){
+      const interest = bal * r;
+      const principal = pmt - interest;
+      bal = Math.max(0, bal - principal);
+      if(i<=12){
+        rows.push({
+          i, pmt, principal, interest, bal
+        });
+      }
+      intTotal += interest;
+    }
+    const sumTotal = pv + intTotal;
+
+    $('#pv').textContent = nice(Math.round(pv));
+    $('#pmt').textContent = nice(Math.round(pmt));
+    $('#intTotal').textContent = nice(Math.round(intTotal));
+    $('#sumTotal').textContent = nice(Math.round(sumTotal));
+
+    const tbody = $('#amortTable tbody');
+    tbody.innerHTML = rows.map(r=>`
+      <tr>
+        <td>${r.i}</td>
+        <td class="text-end">${nice(Math.round(r.pmt))}</td>
+        <td class="text-end">${nice(Math.round(r.principal))}</td>
+        <td class="text-end">${nice(Math.round(r.interest))}</td>
+        <td class="text-end">${nice(Math.round(r.bal))}</td>
+      </tr>`).join('');
+
+    return {pv, pmt, n, r, rowsAll: rows};
+  }
+
+  function genCSV(){
+    const price = $('#price').value, down = $('#down').value, rate = $('#rate').value, years = $('#years').value, fee=$('#fee').value;
+    // build full schedule for CSV
+    const pv = Math.max(0, parseFloat(price||0) - parseFloat(down||0)) + Math.max(0, parseFloat(fee||0));
+    const n  = Math.max(1, parseInt(years||0,10)*12);
+    const r  = parseFloat(rate||0)/100/12;
+    const pmt = r>0 ? (r*pv)/(1 - Math.pow(1+r, -n)) : (pv/n);
+
+    let bal = pv;
+    const lines = [['งวด','ค่างวด','เงินต้น','ดอกเบี้ย','ยอดคงเหลือ']];
+    for(let i=1;i<=n;i++){
+      const interest = bal * r;
+      const principal = pmt - interest;
+      bal = Math.max(0, bal - principal);
+      lines.push([i, Math.round(pmt), Math.round(principal), Math.round(interest), Math.round(bal)]);
+    }
+    const csv = lines.map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'loan_schedule_forward_studio.csv';
+    a.click();
+  }
+
+  // events
+  $('#btnCalc').addEventListener('click', calc);
+  $('#btnCSV').addEventListener('click', genCSV);
+
+  // init once
+  calc();
+})();
+</script>
+</body>
+</html>

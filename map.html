@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>แผนที่/แดดลม — AI House Designer</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="./assets/css/app.css" rel="stylesheet">
+  <style>
+    body{font-family:'Kanit',sans-serif;background:#f6f8fb}
+    .navbar{background:linear-gradient(90deg,#0ea5e9,#6366f1)}
+    .navbar .nav-link,.navbar-brand{color:#fff!important}
+    .pill{border-radius:999px}
+    .card{border:0;box-shadow:0 8px 24px rgba(15,23,42,.06);border-radius:16px}
+    #gmap{width:100%;height:520px;border-radius:14px}
+    .small-muted{color:#64748b}
+    .badge-soft{background:#e2f2ff;color:#0b65c2;border-radius:999px}
+  </style>
+</head>
+<body data-page="map">
+<header data-include></header>
+
+<div class="container py-4">
+  <div class="row g-3">
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-2"><i class="fa-solid fa-map-location-dot me-2"></i>ค้นหาตำแหน่งที่ดิน</h5>
+
+          <div class="mb-2">
+            <label class="form-label">จังหวัด (77 จังหวัด)</label>
+            <select id="provinceSel" class="form-select">
+              <option value="">— เลือกจังหวัด —</option>
+            </select>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">อำเภอ/เขต</label>
+            <select id="amphoeSel" class="form-select" disabled>
+              <option value="">— เลือกอำเภอ/เขต —</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">ตำบล/แขวง</label>
+            <select id="tambonSel" class="form-select" disabled>
+              <option value="">— เลือกตำบล/แขวง —</option>
+            </select>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">ค้นหาด้วยที่อยู่ (ทางเลือก)</label>
+            <div class="input-group">
+              <input id="freeText" class="form-control" placeholder="เช่น 99 หมู่ 1 ต.สุเทพ อ.เมือง เชียงใหม่">
+              <button id="btnSearch" class="btn btn-outline-primary"><i class="fa-solid fa-magnifying-glass"></i></button>
+            </div>
+            <div class="small-muted mt-1">พิมพ์ที่อยู่ละเอียดเพื่อปักหมุดแม่นขึ้น</div>
+          </div>
+
+          <div class="d-grid gap-2 mt-3">
+            <button id="btnLocate" class="btn btn-outline-dark pill"><i class="fa-solid fa-location-crosshairs me-2"></i>ใช้ตำแหน่งปัจจุบัน</button>
+            <button id="btnSave"   class="btn btn-primary pill"><i class="fa-solid fa-floppy-disk me-2"></i>บันทึกจังหวัด/อำเภอ/ตำบล</button>
+            <a id="btnGmaps" href="#" target="_blank" class="btn btn-ghost pill btn-outline-secondary">
+              <i class="fa-brands fa-google me-2"></i>เปิดใน Google Maps
+            </a>
+          </div>
+
+          <hr>
+          <div>
+            <div class="badge-soft px-2 py-1 mb-2 d-inline-flex align-items-center gap-2">
+              <i class="fa-solid fa-wind"></i> วิเคราะห์ทิศลม/แดด (พื้นฐาน)
+            </div>
+            <div class="small">
+              เดือนปัจจุบัน: <span id="monTag"></span><br>
+              ลมเด่น: <strong id="windTag">—</strong><br>
+              คำแนะนำ: <span id="tipTag" class="text-muted">—</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-body">
+          <div id="gmap"></div>
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <div class="small text-muted">Lat/Lng: <span id="latlng">—</span></div>
+            <div class="small-muted">ลากหมุดเพื่อปรับตำแหน่งได้ (จะเติมจังหวัด/อำเภอ/ตำบลให้อัตโนมัติ)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer data-include></footer>
+
+<!-- Google Maps JS (ใช้คีย์ของคุณ) -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-msJrlWVRpDcXg_qZ89zMiROljXhMU_Y&language=th&region=TH&libraries=places"></script>
+
+<!-- App core (โหลด partials) -->
+<script type="module" src="./assets/js/app.js"></script>
+
+<script>
+(function(){
+  const $ = s=>document.querySelector(s);
+
+  // ====== แหล่งข้อมูล (ออฟไลน์ภายในโปรเจกต์) + fallback ออนไลน์ ======
+  const V='v1'; // bump เมื่ออัปเดตไฟล์
+  const LOCAL_PROVINCE = `./assets/data/api_province.json?${V}`;
+  const LOCAL_AMPHURE  = `./assets/data/api_amphure.json?${V}`;
+  const LOCAL_TAMBON   = `./assets/data/api_tambon.json?${V}`;
+  const REMOTE_PROVINCE = 'https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_province.json';
+  const REMOTE_AMPHURE  = 'https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_amphure.json';
+  const REMOTE_TAMBON   = 'https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_tambon.json';
+
+  async function fetchWithFallback(localUrl, remoteUrl){
+    try{
+      const r = await fetch(localUrl, {cache:'default'});
+      if(!r.ok) throw new Error('local not ok');
+      return await r.json();
+    }catch(e){
+      const r2 = await fetch(remoteUrl, {cache:'no-cache'});
+      if(!r2.ok) throw new Error('remote not ok');
+      return await r2.json();
+    }
+  }
+
+  let PROVINCES = [], AMPHURES = [], TAMBONS = [];
+  let map, marker, geocoder;
+
+  // ====== แผนที่ & Geocoder ======
+  function initMap(){
+    const centerTH = {lat:13.736717, lng:100.523186}; // Bangkok
+    map = new google.maps.Map($('#gmap'), {
+      center: centerTH, zoom: 6, mapTypeControl:false, streetViewControl:false
+    });
+    geocoder = new google.maps.Geocoder();
+    marker = new google.maps.Marker({
+      position: centerTH, map, draggable: true
+    });
+    updateLatLngDisplay(centerTH);
+    updateGmapsBtn();
+    marker.addListener('dragend', ()=> {
+      const pos = marker.getPosition();
+      const latlng = {lat:pos.lat(), lng:pos.lng()};
+      updateLatLngDisplay(latlng);
+      updateGmapsBtn();
+      reverseGeocode(latlng); // เติม ดรอปดาวน์อัตโนมัติจากหมุด
+    });
+  }
+
+  function updateLatLngDisplay(latlng){
+    $('#latlng').textContent = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+  }
+  function updateGmapsBtn(){
+    const pos = marker.getPosition();
+    const lat = pos.lat(), lng = pos.lng();
+    const addr = buildAddressFromSelections();
+    $('#btnGmaps').href = addr ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`
+                               : `https://www.google.com/maps?q=${lat},${lng}`;
+  }
+
+  function geocodeAddress(addr){
+    if(!addr) return;
+    geocoder.geocode({ address: addr, componentRestrictions: { country: 'TH' } }, (res,status)=>{
+      if(status === 'OK' && res && res[0]){
+        const loc = res[0].geometry.location;
+        const latlng = {lat:loc.lat(), lng:loc.lng()};
+        map.setCenter(latlng); map.setZoom(13);
+        marker.setPosition(latlng);
+        updateLatLngDisplay(latlng);
+        updateGmapsBtn();
+      }else{
+        alert('ค้นหาที่อยู่ไม่สำเร็จ: ' + status);
+      }
+    });
+  }
+
+  // ====== Reverse Geocode: จากหมุด -> เติมจังหวัด/อำเภอ/ตำบล ======
+  function reverseGeocode(latlng){
+    geocoder.geocode({ location: latlng }, (res,status)=>{
+      if(status!=='OK' || !res || !res[0]) return;
+      const comp = res[0].address_components;
+
+      const get = (type)=> {
+        const x = comp.find(c=>c.types.includes(type));
+        return x ? x.long_name : '';
+      };
+
+      const tambonName = get('sublocality_level_1') || get('administrative_area_level_3') || '';
+      const amphoeName = get('locality') || get('administrative_area_level_2') || '';
+      const provinceName = get('administrative_area_level_1') || '';
+
+      selectProvinceByName(provinceName);
+      const pid = $('#provinceSel').value;
+      if(pid){
+        renderAmphoes(pid);
+        selectAmphoeByName(amphoeName, pid);
+        const aid = $('#amphoeSel').value;
+        if(aid){
+          renderTambons(aid);
+          selectTambonByName(tambonName, aid);
+        }
+      }
+    });
+  }
+
+  // ====== Utils: จัดการชื่อ/แมตช์ไทย-กทม. ======
+  function normalizeName(s){
+    return (s||'')
+      .replace(/^แขวง\s*/,'').replace(/^ตำบล\s*/,'').replace(/^ต\.\s*/,'')
+      .replace(/^เขต\s*/,'').replace(/^อำเภอ\s*/,'').replace(/^อ\.\s*/,'')
+      .replace(/^\s+|\s+$/g,'')
+      .toLowerCase();
+  }
+  function selectProvinceByName(name){
+    if(!name) return;
+    const target = PROVINCES.find(p=>{
+      const th = normalizeName(p.name_th);
+      const en = (p.name_en||'').toLowerCase();
+      const q = normalizeName(name);
+      return th===q || en===q || p.name_th===name || p.name_en===name;
+    });
+    if(target){
+      $('#provinceSel').value = String(target.id);
+    }
+  }
+  function selectAmphoeByName(name, provinceId){
+    if(!name) return;
+    const list = AMPHURES.filter(a=>String(a.province_id)===String(provinceId));
+    const target = list.find(a=>{
+      const th = normalizeName(a.name_th);
+      const en = (a.name_en||'').toLowerCase();
+      const q = normalizeName(name);
+      return th===q || en===q || a.name_th===name || a.name_en===name;
+    });
+    if(target){
+      $('#amphoeSel').value = String(target.id);
+    }
+  }
+  function selectTambonByName(name, amphoeId){
+    if(!name) return;
+    const list = TAMBONS.filter(t=>String(t.amphure_id)===String(amphoeId));
+    const target = list.find(t=>{
+      const th = normalizeName(t.name_th);
+      const en = (t.name_en||'').toLowerCase();
+      const q = normalizeName(name);
+      return th===q || en===q || t.name_th===name || t.name_en===name;
+    });
+    if(target){
+      $('#tambonSel').value = String(target.id);
+    }
+  }
+
+  // ====== วิเคราะห์ทิศลม/แดด (พื้นฐาน) ======
+  function updateWindTip(){
+    const d = new Date(); const m = d.getMonth()+1;
+    $('#monTag').textContent = d.toLocaleDateString('th-TH',{month:'long',year:'numeric'});
+    let wind, tip;
+    if(m>=5 && m<=10){
+      wind = 'SW (มรสุมตะวันตกเฉียงใต้)';
+      tip = 'ช่วงฝน ลม-ฝนจากทิศตะวันตกเฉียงใต้ เน้นกันสาด/ผนังทึบฝั่งตะวันตก+ใต้ เปิดช่องลม NE/E';
+    }else{
+      wind = 'NE (มรสุมตะวันออกเฉียงเหนือ)';
+      tip = 'ช่วงปลายปี/ต้นปี ลมจากทิศตะวันออกเฉียงเหนือ เปิดรับลม NE/E กันแดดแรงทาง W/WSW';
+    }
+    $('#windTag').textContent = wind;
+    $('#tipTag').textContent  = tip;
+  }
+
+  // ====== โหลดข้อมูลจังหวัด/อำเภอ/ตำบล (แคช 1 วัน) ======
+  async function loadAdminData(){
+    try{
+      const now = Date.now();
+      const oneDay = 86400000;
+      let cp = localStorage.getItem('fs_provinces_json');
+      let ca = localStorage.getItem('fs_amphures_json');
+      let ct = localStorage.getItem('fs_tambons_json');
+
+      if(cp && now - Number(localStorage.getItem('fs_provinces_ts')||0) < oneDay) PROVINCES = JSON.parse(cp);
+      if(ca && now - Number(localStorage.getItem('fs_amphures_ts')||0) < oneDay) AMPHURES  = JSON.parse(ca);
+      if(ct && now - Number(localStorage.getItem('fs_tambons_ts')||0)  < oneDay) TAMBONS   = JSON.parse(ct);
+
+      if(PROVINCES.length===0){
+        PROVINCES = await fetchWithFallback(LOCAL_PROVINCE, REMOTE_PROVINCE);
+        localStorage.setItem('fs_provinces_json', JSON.stringify(PROVINCES));
+        localStorage.setItem('fs_provinces_ts', String(now));
+      }
+      if(AMPHURES.length===0){
+        AMPHURES = await fetchWithFallback(LOCAL_AMPHURE, REMOTE_AMPHURE);
+        localStorage.setItem('fs_amphures_json', JSON.stringify(AMPHURES));
+        localStorage.setItem('fs_amphures_ts', String(now));
+      }
+      if(TAMBONS.length===0){
+        TAMBONS = await fetchWithFallback(LOCAL_TAMBON, REMOTE_TAMBON);
+        localStorage.setItem('fs_tambons_json', JSON.stringify(TAMBONS));
+        localStorage.setItem('fs_tambons_ts', String(now));
+      }
+
+      renderProvinces();
+      restoreSelection(); // ถ้ามีค่าที่บันทึกไว้จะเลือกให้ + geocode ให้
+    }catch(e){
+      console.error(e);
+      alert('โหลดรายชื่อจังหวัด/อำเภอ/ตำบลไม่สำเร็จ โปรดรีเฟรชหน้าอีกครั้ง');
+    }
+  }
+
+  function renderProvinces(){
+    const sel = $('#provinceSel');
+    const list = [...PROVINCES].sort((a,b)=>a.name_th.localeCompare(b.name_th,'th-TH'));
+    sel.innerHTML = '<option value="">— เลือกจังหวัด —</option>' +
+      list.map(p=>`<option value="${p.id}" data-name="${p.name_th}">${p.name_th}</option>`).join('');
+  }
+  function renderAmphoes(provinceId){
+    const sel = $('#amphoeSel');
+    $('#tambonSel').innerHTML = '<option value="">— เลือกตำบล/แขวง —</option>';
+    $('#tambonSel').disabled = true;
+
+    if(!provinceId){
+      sel.innerHTML = '<option value="">— เลือกอำเภอ/เขต —</option>';
+      sel.disabled = true; return;
+    }
+    const list = AMPHURES.filter(a=>String(a.province_id)===String(provinceId))
+                  .sort((a,b)=>a.name_th.localeCompare(b.name_th,'th-TH'));
+    sel.innerHTML = '<option value="">— เลือกอำเภอ/เขต —</option>' +
+      list.map(a=>`<option value="${a.id}" data-name="${a.name_th}">${a.name_th}</option>`).join('');
+    sel.disabled = false;
+  }
+  function renderTambons(amphoeId){
+    const sel = $('#tambonSel');
+    if(!amphoeId){
+      sel.innerHTML = '<option value="">— เลือกตำบล/แขวง —</option>';
+      sel.disabled = true; return;
+    }
+    const list = TAMBONS.filter(t=>String(t.amphure_id)===String(amphoeId))
+                  .sort((a,b)=>a.name_th.localeCompare(b.name_th,'th-TH'));
+    sel.innerHTML = '<option value="">— เลือกตำบล/แขวง —</option>' +
+      list.map(t=>`<option value="${t.id}" data-name="${t.name_th}" data-zip="${t.zip_code||''}">${t.name_th}</option>`).join('');
+    sel.disabled = false;
+  }
+
+  // ====== Address Builder (สำหรับค้น/เปิด Google Maps) ======
+  function buildAddressFromSelections(){
+    const pOpt = $('#provinceSel').selectedOptions[0];
+    const aOpt = $('#amphoeSel').selectedOptions[0];
+    const tOpt = $('#tambonSel').selectedOptions[0];
+    const pName = pOpt ? (pOpt.dataset.name||'') : '';
+    const aName = aOpt ? (aOpt.dataset.name||'') : '';
+    const tName = tOpt ? (tOpt.dataset.name||'') : '';
+    if(!pName && !aName && !tName) return '';
+    const parts = [];
+    if(tName) parts.push(tName);
+    if(aName) parts.push(aName);
+    if(pName) parts.push(pName);
+    parts.push('ประเทศไทย');
+    return parts.join(', ');
+  }
+
+  // ====== Persist selections for Designer ======
+  function saveToLocal(){
+    const pOpt = $('#provinceSel').selectedOptions[0];
+    const aOpt = $('#amphoeSel').selectedOptions[0];
+    const tOpt = $('#tambonSel').selectedOptions[0];
+    const provinceName = pOpt ? (pOpt.dataset.name||'') : '';
+    const amphoeName   = aOpt ? (aOpt.dataset.name||'') : '';
+    const tambonName   = tOpt ? (tOpt.dataset.name||'') : '';
+    try{
+      if(provinceName) localStorage.setItem('fs_province', provinceName);
+      if(amphoeName)   localStorage.setItem('fs_amphoe', amphoeName);
+      if(tambonName)   localStorage.setItem('fs_tambon', tambonName);
+      alert('บันทึกจังหวัด/อำเภอ/ตำบลแล้ว — เปิดหน้า Designer เพื่อใช้งานได้เลย');
+    }catch(e){}
+  }
+  function restoreSelection(){
+    const pSaved = localStorage.getItem('fs_province') || '';
+    const aSaved = localStorage.getItem('fs_amphoe') || '';
+    const tSaved = localStorage.getItem('fs_tambon') || '';
+    if(!pSaved) return;
+
+    const p = PROVINCES.find(x=>x.name_th===pSaved);
+    if(p){
+      $('#provinceSel').value = String(p.id);
+      renderAmphoes(p.id);
+
+      const a = AMPHURES.find(x=>String(x.province_id)===String(p.id) && x.name_th===aSaved);
+      if(a){
+        $('#amphoeSel').value = String(a.id);
+        renderTambons(a.id);
+
+        const t = TAMBONS.find(x=>String(x.amphure_id)===String(a.id) && x.name_th===tSaved);
+        if(t){
+          $('#tambonSel').value = String(t.id);
+          geocodeAddress(buildAddressFromSelections());
+        }else{
+          geocodeAddress(`${a.name_th}, ${p.name_th}, ประเทศไทย`);
+        }
+      }else{
+        geocodeAddress(`${p.name_th}, ประเทศไทย`);
+      }
+    }
+  }
+
+  // ====== Events ======
+  function bindEvents(){
+    $('#provinceSel').addEventListener('change', e=>{
+      const pid = e.target.value;
+      renderAmphoes(pid);
+      $('#tambonSel').innerHTML = '<option value="">— เลือกตำบล/แขวง —</option>';
+      $('#tambonSel').disabled = true;
+
+      const pName = e.target.selectedOptions[0]?.dataset.name || '';
+      if(pName){ geocodeAddress(`${pName}, ประเทศไทย`); }
+    });
+
+    $('#amphoeSel').addEventListener('change', e=>{
+      const aid = e.target.value;
+      renderTambons(aid);
+
+      const aName = e.target.selectedOptions[0]?.dataset.name || '';
+      const pName = $('#provinceSel').selectedOptions[0]?.dataset.name || '';
+      if(aName && pName){ geocodeAddress(`${aName}, ${pName}, ประเทศไทย`); }
+    });
+
+    $('#tambonSel').addEventListener('change', e=>{
+      const tName = e.target.selectedOptions[0]?.dataset.name || '';
+      const aName = $('#amphoeSel').selectedOptions[0]?.dataset.name || '';
+      const pName = $('#provinceSel').selectedOptions[0]?.dataset.name || '';
+      if(tName && aName && pName){
+        geocodeAddress(`${tName}, ${aName}, ${pName}, ประเทศไทย`);
+      }
+    });
+
+    $('#btnSearch').addEventListener('click', ()=>{
+      const t = ($('#freeText').value||'').trim();
+      if(!t) return;
+      geocodeAddress(`${t}, ประเทศไทย`);
+    });
+
+    $('#btnLocate').addEventListener('click', ()=>{
+      if(!navigator.geolocation){ alert('เบราว์เซอร์ไม่รองรับระบุตำแหน่ง'); return; }
+      navigator.geolocation.getCurrentPosition(pos=>{
+        const latlng = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+        map.setCenter(latlng); map.setZoom(15); marker.setPosition(latlng);
+        updateLatLngDisplay(latlng); updateGmapsBtn();
+        reverseGeocode(latlng);
+      }, err=> alert('ไม่สามารถอ่านตำแหน่ง: '+err.message), {enableHighAccuracy:true, timeout:8000});
+    });
+
+    $('#btnSave').addEventListener('click', saveToLocal);
+  }
+
+  // ====== Boot ======
+  function boot(){
+    initMap();
+    updateWindTip();
+    bindEvents();
+    loadAdminData();
+  }
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', boot); }
+  else{ boot(); }
+})();
+</script>
+</body>
+</html>

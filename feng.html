@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>วิเคราะห์ฮวงจุ้ย — AI House Designer</title>
+
+  <!-- CSS & Fonts -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="./assets/css/app.css" rel="stylesheet">
+
+  <style>
+    body{font-family:'Kanit',sans-serif}
+    .small-muted{color:#64748b}
+    .pill{border-radius:999px}
+    /* คอมพาส */
+    .compass-wrap{position:relative; width:260px; height:260px; margin:auto}
+    .compass{width:100%; height:100%; border-radius:50%; background:conic-gradient(#0ea5e911 0 25%,transparent 0 50%, #0ea5e911 0 75%, transparent 0 100%), #0b1020; border:10px solid #111827; position:relative; box-shadow:inset 0 0 0 2px #1f2937, 0 10px 30px rgba(2,6,23,.3)}
+    .compass .mark{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); color:#e5e7eb; font-weight:600}
+    .compass .dirN{position:absolute; top:6px; left:50%; transform:translateX(-50%); color:#eab308}
+    .compass .dirS{position:absolute; bottom:6px; left:50%; transform:translateX(-50%); color:#93c5fd}
+    .compass .dirE{position:absolute; right:6px; top:50%; transform:translateY(-50%); color:#fca5a5}
+    .compass .dirW{position:absolute; left:6px; top:50%; transform:translateY(-50%); color:#86efac}
+    .needle{position:absolute; left:50%; top:50%; width:4px; height:48%; transform-origin:50% 90%; transform:translate(-50%,-90%) rotate(0deg); background:linear-gradient(#ef4444,#ef4444 60%,transparent 60%); border-radius:999px}
+    .needle:after{content:''; position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); width:14px; height:14px; background:#ef4444; border:2px solid #fff; border-radius:50%}
+    .swatch{display:inline-block; width:18px; height:18px; border-radius:4px; border:1px solid #e5e7eb; margin-right:6px; vertical-align:middle}
+    .card-idea{background:#fff; border:0; box-shadow:0 10px 24px rgba(15,23,42,.06); border-radius:16px}
+    @media (prefers-color-scheme: dark){
+      .card-idea{background:#0f1629; border-color:#1f2a44}
+      .compass{border-color:#0b1220}
+      .swatch{border-color:#334155}
+    }
+  </style>
+</head>
+<body data-page="feng">
+
+<!-- Navbar (ฝังหน้า) -->
+<header>
+  <nav class="navbar navbar-expand-lg navbar-dark" style="background:linear-gradient(90deg,#0ea5e9,#6366f1)">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="/ai-house-designer/index.html">
+        <i class="fa-solid fa-house-chimney-window me-2"></i>Forward Studio
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="topNav">
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/index.html">หน้าแรก</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/designer.html">Designer</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/plan.html">แบบแปลน</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/boq.html">BOQ</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/map.html">แผนที่/แดดลม</a></li>
+          <li class="nav-item"><a class="nav-link active" href="/ai-house-designer/feng.html">ฮวงจุ้ย</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/permit.html">ขออนุญาต</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/loan.html">สินเชื่อ</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<div class="container py-4">
+  <div class="row g-3">
+    <!-- ซ้าย: ตั้งค่า -->
+    <div class="col-lg-4">
+      <div class="card card-idea">
+        <div class="card-body">
+          <h5 class="mb-3"><i class="fa-solid fa-yin-yang me-2"></i>ตั้งค่าวิเคราะห์ฮวงจุ้ย</h5>
+
+          <div class="mb-3">
+            <label class="form-label">บ้านหันหน้า (องศา)</label>
+            <input id="azimuth" type="range" min="0" max="359" value="0" class="form-range">
+            <div class="d-flex justify-content-between small-muted">
+              <span>N</span><span>E</span><span>S</span><span>W</span>
+            </div>
+            <div class="mt-1">ทิศ: <span id="dirText" class="fw-semibold">N</span> (<span id="degText">0</span>°)</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">รูปแบบบ้าน</label>
+            <select id="styleSel" class="form-select"></select>
+            <div id="styleDesc" class="small-muted mt-1"></div>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label">สีหลัก</label>
+              <input id="colorMain" type="color" class="form-control form-control-color" value="#e0e7ff">
+            </div>
+            <div class="col-6">
+              <label class="form-label">จำนวนชั้น</label>
+              <select id="floors" class="form-select">
+                <option>1</option><option selected>2</option><option>3</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="d-grid mt-3 gap-2">
+            <button id="btnPull" class="btn btn-outline-secondary pill">
+              <i class="fa-solid fa-plug-circle-check me-2"></i>ดึงค่าจาก Designer
+            </button>
+            <button id="btnPrint" class="btn btn-primary pill">
+              <i class="fa-solid fa-print me-2"></i>พิมพ์/บันทึก PDF
+            </button>
+          </div>
+
+          <div class="small-muted mt-3">* ฮวงจุ้ยเป็นความเชื่อส่วนบุคคล ใช้ประกอบการตัดสินใจร่วมกับการออกแบบที่เหมาะสม</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ขวา: ผลลัพธ์ -->
+    <div class="col-lg-8">
+      <div class="card card-idea mb-3">
+        <div class="card-body">
+          <div class="row g-3 align-items-center">
+            <div class="col-md-5">
+              <div class="compass-wrap">
+                <div class="compass">
+                  <div class="dirN">N</div>
+                  <div class="dirE">E</div>
+                  <div class="dirS">S</div>
+                  <div class="dirW">W</div>
+                  <div class="mark text-center">
+                    <div class="fw-bold">เข็มทิศ</div>
+                    <div class="small-muted">หมุนตามองศาบ้าน</div>
+                  </div>
+                  <div id="needle" class="needle"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-7">
+              <h5 class="mb-1">ธาตุประจำทิศ: <span id="elemName" class="badge bg-info pill"></span></h5>
+              <div class="small-muted">สีมงคลที่แนะนำ:</div>
+              <div id="luckyColors" class="mt-1"></div>
+              <div class="mt-2">สีที่คุณเลือกตอนนี้: <span id="pickedColorBox" class="swatch"></span><code id="pickedColor">#e0e7ff</code></div>
+              <div class="mt-2">รูปแบบบ้าน: <span id="styleName" class="fw-semibold"></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- คำแนะนำ -->
+      <div class="card card-idea">
+        <div class="card-body">
+          <h5 class="mb-2">คำแนะนำฮวงจุ้ยโดยสรุป</h5>
+          <ul id="adviceList" class="mb-3"></ul>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <h6 class="mb-1">การจัดวางหลัก</h6>
+              <ul class="small-muted mb-0" id="layoutTips">
+                <!-- filled by JS -->
+              </ul>
+            </div>
+            <div class="col-md-6">
+              <h6 class="mb-1">เคล็ดลับตามสไตล์ที่เลือก</h6>
+              <ul class="small-muted mb-0" id="styleTips">
+                <!-- filled by JS -->
+              </ul>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<footer class="text-center py-4 small-muted">
+  Copyright © <strong>Forward Studio</strong> — สงวนลิขสิทธิ์
+</footer>
+
+<!-- JS libs -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Page JS -->
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+
+  /* --- Data --- */
+  const STYLES = [
+    { id:'modern',       name:'บ้านสไตล์โมเดิร์น (Modern)',        desc:'เรียบง่าย ทันสมัย เส้นสายตรง วัสดุสมัยใหม่' },
+    { id:'contemporary', name:'บ้านสไตล์ร่วมสมัย (Contemporary)',  desc:'ผสมคลาสสิกและโมเดิร์น ใช้สีเอิร์ธโทน' },
+    { id:'classic',      name:'บ้านสไตล์คลาสสิก (Classic)',        desc:'หรูหรา รายละเอียดประณีต โทนอบอุ่น' },
+    { id:'loft',         name:'บ้านสไตล์ลอฟท์ (Loft)',             desc:'ดิบ โชว์โครงสร้าง อิฐ เหล็ก ปูนเปลือย' },
+    { id:'nordic',       name:'บ้านสไตล์นอร์ดิก (Nordic)',          desc:'อบอุ่น เรียบง่าย สีอ่อน ไม้ธรรมชาติ' },
+    { id:'minimal',      name:'บ้านสไตล์มินิมอล (Minimalist)',      desc:'น้อยแต่มาก เน้นการใช้สอยและพื้นที่ว่าง' },
+    { id:'thai_oriental',name:'บ้านสไตล์ไทยประยุกต์ (Thai Oriental)',desc:'ผสานความเป็นไทยร่วมสมัย' },
+    { id:'colonial',     name:'บ้านสไตล์โคโลเนียล (Colonial)',     desc:'กลิ่นอายยุโรป คลาสสิก หรูหรา' },
+    { id:'natural',      name:'บ้านสไตล์เนเชอรัล (Natural)',       desc:'กลมกลืนธรรมชาติ ใช้วัสดุธรรมชาติ' },
+    { id:'tropical',     name:'บ้านสไตล์ทรอปิคอล (Tropical)',       desc:'เหมาะอากาศร้อนชื้น โปร่ง โล่ง สีสดใส' },
+    { id:'vintage',      name:'บ้านสไตล์วินเทจ (Vintage)',          desc:'คลาสสิกย้อนยุค อบอุ่น' },
+    { id:'luxury',       name:'บ้านสไตล์ลักซ์ชัวรี่ (Luxury)',      desc:'โอ่อ่า วัสดุคุณภาพสูง' },
+    { id:'retro',        name:'บ้านสไตล์เรโทร (Retro)',             desc:'ย้อนยุค สีสัน/ลายจัดจ้าน' },
+    { id:'thai',         name:'บ้านทรงไทย (Thai Style)',             desc:'เอกลักษณ์ไทย หลังคาสูง ระบายอากาศดี' }
+  ];
+  const STYLE_TIPS = {
+    modern: ['เพิ่มสวนแนวตั้ง/ไม้ประดับด้านหน้าลดความแข็งของเส้นสาย','ใช้โทนสีเรียบแล้วเติมสีมงคลบริเวณประตู/เฉลียง'],
+    minimal:['เลี่ยงเส้นคมชี้เข้าประตู','คุมโทน 2–3 สี และแทรกสีมงคลจุดสำคัญ'],
+    loft:   ['บัลลานซ์ความดิบด้วยไม้/ต้นไม้','หลีกเลี่ยงท่อ/เสาแนวคมพุ่งเข้าประตู'],
+    nordic: ['รับแสงธรรมชาติแต่กันแดดทิศตะวันตก','โทนไม้สว่าง + สีมงคลตามทิศ'],
+    classic:['ซุ้มโค้ง/คิ้วบัวไม่ชี้เข้าประตู','ใช้ไฟ Warm ขับเน้นองค์ประกอบ'],
+    colonial:['หน้าต่างบานสูงโปร่ง รับลมดี','เฉลียงลึกช่วยกันแดดฝน'],
+    natural:['ใช้วัสดุธรรมชาติคุมโทน','แทรกน้ำ/ต้นไม้ทิศที่เหมาะสม'],
+    tropical:['ชายคายาว ระบายอากาศ','เลือกสีสดใสตามมงคลของทิศ'],
+    luxury: ['สมดุลวัสดุเงา-ด้าน ไม่ให้มี “พลังสะท้อน” มากเกิน','จุดรับแขกให้โปร่ง เชิญพลังดีเข้าบ้าน'],
+    thai_oriental:['หลังคาสูง ระบายอากาศ','เฉลียง/ชานรับลมทิศเหมาะสม'],
+    thai:   ['ยกพื้นกันชื้น รับลมใต้ท้องบ้าน','ใช้ไม้และสีเอิร์ธโทนเสริมพลังดิน'],
+    vintage:['ใช้สีพาสเทลที่สัมพันธ์ทิศ','ของตกแต่งไม่กีดขวางทางเดินพลัง'],
+    retro:  ['ใช้สีจัดจ้านแบบมีจุดนำสายตา','เลี่ยงลวดลายพุ่งชนประตู'],
+    contemporary:['ผสานวัสดุใหม่-เก่าอย่างกลมกลืน','คุมสีกลาง เติมมงคลเฉพาะจุด'],
+  };
+
+  const elementByDir = {N:'น้ำ', NE:'ดิน', E:'ไม้', SE:'ไม้', S:'ไฟ', SW:'ดิน', W:'โลหะ', NW:'โลหะ'};
+  const luckyColors = {
+    'น้ำ': ['น้ำเงิน','ฟ้า','ดำ'],
+    'ดิน': ['ครีม','น้ำตาลอ่อน','เหลืองอ่อน'],
+    'ไม้': ['เขียว','ฟ้าเทา'],
+    'ไฟ': ['แดง','ส้ม','ชมพู'],
+    'โลหะ': ['ขาว','เทา','เงิน']
+  };
+
+  /* --- Helpers --- */
+  function faceFromAz(az){
+    const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+    return dirs[Math.round(((az%360)+360)%360/45)%8];
+  }
+  function toSwatches(names){
+    const mapColor = {
+      'น้ำเงิน':'#2563eb','ฟ้า':'#38bdf8','ดำ':'#111827',
+      'ครีม':'#f5e6c8','น้ำตาลอ่อน':'#d6b28f','เหลืองอ่อน':'#fde68a',
+      'เขียว':'#22c55e','ฟ้าเทา':'#93c5fd',
+      'แดง':'#ef4444','ส้ม':'#fb923c','ชมพู':'#f472b6',
+      'ขาว':'#ffffff','เทา':'#cbd5e1','เงิน':'#e5e7eb'
+    };
+    return names.map(n=>`<span class="swatch" title="${n}" style="background:${mapColor[n]||'#e5e7eb'}"></span> ${n}`).join(' · ');
+  }
+
+  /* --- Sync UI --- */
+  function fillStyleSelect(){
+    const sel = $('#styleSel'); if(!sel) return;
+    sel.innerHTML = STYLES.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+    // ตั้งค่าเริ่มจาก localStorage ถ้ามี
+    let saved = 'modern';
+    try{ saved = localStorage.getItem('fs_style') || 'modern'; }catch(e){}
+    sel.value = saved;
+    const cur = STYLES.find(x=>x.id===saved);
+    $('#styleDesc').textContent = cur?.desc || '';
+  }
+
+  function loadFromDesigner(){
+    // รองรับค่าเก่าที่หน้า designer เคยเซฟไว้ (ถ้ามี)
+    try{
+      const cfg = JSON.parse(localStorage.getItem('fs_house_cfg')||'{}');
+      if(typeof cfg.azimuth !== 'undefined') { $('#azimuth').value = cfg.azimuth; }
+      if(cfg.colorMain){ $('#colorMain').value = cfg.colorMain; }
+      if(cfg.floors){ $('#floors').value = String(cfg.floors); }
+      if(cfg.style){ $('#styleSel').value = cfg.style; }
+    }catch(e){}
+    // รองรับ fs_style ปัจจุบัน
+    try{
+      const s = localStorage.getItem('fs_style'); if(s){ $('#styleSel').value = s; }
+    }catch(e){}
+    updateAll();
+  }
+
+  /* --- Core update --- */
+  function updateAll(){
+    const az = parseInt($('#azimuth').value,10)||0;
+    const dir = faceFromAz(az);
+    const style = $('#styleSel').value;
+    const styleMeta = STYLES.find(x=>x.id===style);
+    const color = $('#colorMain').value;
+    const floors = parseInt($('#floors').value,10)||1;
+
+    // เข็มทิศ
+    $('#needle').style.transform = `translate(-50%,-90%) rotate(${az}deg)`;
+    $('#dirText').textContent = dir;
+    $('#degText').textContent = az;
+
+    // ธาตุ+สีมงคล
+    const elem = elementByDir[dir];
+    $('#elemName').textContent = elem || '-';
+    const colors = luckyColors[elem] || [];
+    $('#luckyColors').innerHTML = toSwatches(colors);
+
+    // สีที่เลือก
+    $('#pickedColor').textContent = color;
+    $('#pickedColorBox').style.background = color;
+
+    // ชื่อสไตล์
+    $('#styleName').textContent = styleMeta?.name || style;
+    $('#styleDesc').textContent = styleMeta?.desc || '';
+
+    // คำแนะนำหลัก
+    const advice = [];
+    advice.push(`บ้านหันหน้าไปทาง <strong>${dir}</strong> (ธาตุ <strong>${elem}</strong>)`);
+    advice.push(`โทนสีมงคลที่แนะนำ: <strong>${colors.join(' / ')||'-'}</strong>`);
+    if(floors>=2) advice.push('บ้านหลายชั้น: โถง/บันไดควรโปร่ง รับแสงธรรมชาติ แต่บังแดดทิศตะวันตก');
+    // สไตล์เฉพาะ
+    (STYLE_TIPS[style]||[]).slice(0,2).forEach(t=>advice.push(t));
+
+    $('#adviceList').innerHTML = advice.map(t=>`<li>${t}</li>`).join('');
+
+    // Layout tips ทั่วไป
+    const layout = [
+      'ทางเข้าหลักโล่ง โปร่ง ไม่ติดของ มีไฟสว่างเพียงพอ',
+      'ห้องครัวไม่ควรตรงประตูหลักโดยตรง',
+      'ห้องนอนควรเลี่ยงทิศตะวันตกที่ร้อนจัด (ถ้าจำเป็นให้เสริมกันแดด)',
+      'โต๊ะทำงานหันหน้าเข้าหาประตู (แต่ไม่ตรงแนวประตู)',
+      'วางต้นไม้/น้ำพุเล็กในทิศที่เหมาะกับธาตุเพื่อเสริมพลัง'
+    ];
+    $('#layoutTips').innerHTML = layout.map(t=>`<li>${t}</li>`).join('');
+
+    // Style tips
+    const tips = STYLE_TIPS[style] || ['คุมโทนสีให้สัมพันธ์กับธาตุ','หลีกเลี่ยงเหลี่ยมคมพุ่งเข้าประตู'];
+    $('#styleTips').innerHTML = tips.map(t=>`<li>${t}</li>`).join('');
+  }
+
+  /* --- Events --- */
+  function boot(){
+    fillStyleSelect();
+    updateAll();
+
+    ['azimuth','styleSel','colorMain','floors'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.addEventListener('input', updateAll);
+      el.addEventListener('change', updateAll);
+    });
+
+    $('#btnPull').addEventListener('click', loadFromDesigner);
+    $('#btnPrint').addEventListener('click', ()=>window.print());
+
+    // โหลดค่าจาก Designer อัตโนมัติรอบแรก (ถ้ามี)
+    loadFromDesigner();
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+
+</body>
+</html>

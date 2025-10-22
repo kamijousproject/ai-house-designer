@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>แบบแปลน (A4) — AI House Designer</title>
+
+  <!-- CSS & Fonts -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="./assets/css/app.css" rel="stylesheet">
+
+  <style>
+    body{font-family:'Kanit',sans-serif}
+    .small-muted{color:#64748b}
+    .pill{border-radius:999px}
+    #sheetWrap{background:#fff;border:1px dashed #e5e7eb;border-radius:12px;padding:10px}
+    #planSVG{max-width:100%;height:auto;display:block;margin:auto;background:#fff}
+    .toolbar .btn{border-radius:999px}
+    .title-kv{font-size:.95rem}
+    @media print{
+      .toolbar,header,footer{display:none!important}
+      body{background:#fff}
+      #sheetWrap{border:0;padding:0}
+      #planSVG{width:210mm;height:297mm}
+    }
+  </style>
+</head>
+<body data-page="plan">
+
+<!-- Navbar (ฝังหน้า) -->
+<header>
+  <nav class="navbar navbar-expand-lg navbar-dark" style="background:linear-gradient(90deg,#0ea5e9,#6366f1)">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="/ai-house-designer/index.html">
+        <i class="fa-solid fa-house-chimney-window me-2"></i>Forward Studio
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="topNav">
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/index.html">หน้าแรก</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/designer.html">Designer</a></li>
+          <li class="nav-item"><a class="nav-link active" href="/ai-house-designer/plan.html">แบบแปลน</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/boq.html">BOQ</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/map.html">แผนที่/แดดลม</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/feng.html">ฮวงจุ้ย</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/permit.html">ขออนุญาต</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/loan.html">สินเชื่อ</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<div class="container py-4">
+  <div class="row g-3">
+    <!-- ซ้าย: ตั้งค่า -->
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-2"><i class="fa-solid fa-ruler-combined me-2"></i>ตั้งค่าแบบแปลน</h5>
+
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label">กว้างที่ดิน (ม.)</label>
+              <input id="plotW" type="number" class="form-control" value="12" step="0.1">
+            </div>
+            <div class="col-6">
+              <label class="form-label">ยาวที่ดิน (ม.)</label>
+              <input id="plotL" type="number" class="form-control" value="20" step="0.1">
+            </div>
+
+            <div class="col-6">
+              <label class="form-label">จำนวนชั้น</label>
+              <select id="floors" class="form-select"><option>1</option><option selected>2</option><option>3</option></select>
+            </div>
+            <div class="col-6">
+              <label class="form-label">สูง/ชั้น (ม.)</label>
+              <input id="floorH" type="number" class="form-control" value="3" step="0.1">
+            </div>
+
+            <div class="col-6">
+              <label class="form-label">หลังคา</label>
+              <select id="roofType" class="form-select">
+                <option value="gable">จั่ว</option>
+                <option value="hip">ปั้นหยา</option>
+                <option value="shed">เพิงหมาแหงน</option>
+                <option value="flat">ดาดฟ้า</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label">สีหลัก</label>
+              <input id="colorMain" type="color" class="form-control form-control-color" value="#e0e7ff">
+            </div>
+
+            <div class="col-6">
+              <label class="form-label">คอลัมน์ภายใน</label>
+              <input id="gridCols" type="number" class="form-control" value="3" min="2" max="6">
+            </div>
+            <div class="col-6">
+              <label class="form-label">แถวภายใน</label>
+              <input id="gridRows" type="number" class="form-control" value="3" min="2" max="6">
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">ทิศหน้าบ้าน (องศา)</label>
+              <input id="azimuth" type="range" min="0" max="359" value="0" class="form-range">
+              <div class="small-muted">ทิศ: <span id="dirText">N</span> (<span id="degText">0</span>°)</div>
+            </div>
+          </div>
+
+          <hr>
+          <!-- ข้อมูลโครงการ -->
+          <h6 class="mb-2">ข้อมูลโครงการ</h6>
+          <div class="mb-2">
+            <label class="form-label">เจ้าของงาน</label>
+            <input id="owner" class="form-control" placeholder="ชื่อ-สกุล / บริษัท">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">ที่ตั้ง</label>
+            <input id="address" class="form-control mb-1" placeholder="บ้านเลขที่/หมู่/ถนน">
+            <div class="row g-2">
+              <div class="col-6"><input id="tambon" class="form-control" placeholder="ตำบล/แขวง"></div>
+              <div class="col-6"><input id="amphoe" class="form-control" placeholder="อำเภอ/เขต"></div>
+              <div class="col-12"><input id="province" class="form-control" placeholder="จังหวัด"></div>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">รูปแบบบ้าน</label>
+            <select id="styleSel" class="form-select"></select>
+            <div id="styleDesc" class="small-muted mt-1"></div>
+          </div>
+
+          <div class="d-grid gap-2 mt-3">
+            <button id="btnPull" class="btn btn-outline-secondary pill">
+              <i class="fa-solid fa-plug-circle-check me-2"></i>ดึงค่าจาก Designer
+            </button>
+            <button id="btnDraw" class="btn btn-primary pill">
+              <i class="fa-solid fa-pencil-ruler me-2"></i>สร้างแบบแปลน
+            </button>
+          </div>
+
+          <div class="small-muted mt-3">
+            * แบบนี้เพื่อวางแนวคิดเบื้องต้น — การยื่นขออนุญาตต้องมี
+            <strong>สถาปนิก/วิศวกรที่มีใบอนุญาต</strong> เซ็นรับรอง
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ขวา: กระดาษ A4 + เครื่องมือ -->
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex flex-wrap justify-content-between align-items-center toolbar mb-2">
+            <div class="title-kv">
+              สเกลโดยประมาณ: <span id="scaleText">—</span>
+              · พื้นที่ใช้สอย ~ <span id="areaText">0</span> ตร.ม.
+            </div>
+            <div class="d-flex gap-2">
+              <button id="btnPNG"  class="btn btn-outline-secondary btn-sm pill"><i class="fa-solid fa-download me-1"></i>ดาวน์โหลด PNG</button>
+              <button id="btnPrint" class="btn btn-outline-secondary btn-sm pill"><i class="fa-solid fa-print me-1"></i>พิมพ์/บันทึก PDF</button>
+            </div>
+          </div>
+
+          <div id="sheetWrap">
+            <!-- A4 portrait 210x297mm → 794x1123 px -->
+            <svg id="planSVG" width="794" height="1123" viewBox="0 0 794 1123" xmlns="http://www.w3.org/2000/svg"></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="text-center py-4 small-muted">
+  Copyright © <strong>Forward Studio</strong> — สงวนลิขสิทธิ์
+</footer>
+
+<!-- JS libs -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Page JS -->
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const nice = n => (n??0).toLocaleString('th-TH',{maximumFractionDigits:0});
+  const num  = v => Number.parseFloat(v||0) || 0;
+
+  /* ---- Styles ---- */
+  const STYLES = [
+    { id:'modern',       name:'โมเดิร์น (Modern)',        desc:'เรียบง่าย ทันสมัย เส้นสายตรง ใช้วัสดุสมัยใหม่' },
+    { id:'contemporary', name:'ร่วมสมัย (Contemporary)',  desc:'ผสมคลาสสิกกับโมเดิร์น คุมโทนเอิร์ธ' },
+    { id:'classic',      name:'คลาสสิก (Classic)',        desc:'หรูหรา รายละเอียดประณีต' },
+    { id:'loft',         name:'ลอฟท์ (Loft)',             desc:'ดิบ โชว์โครงสร้าง อิฐ เหล็ก ปูน' },
+    { id:'nordic',       name:'นอร์ดิก (Nordic)',          desc:'อบอุ่น เรียบง่าย สีอ่อน ไม้' },
+    { id:'minimal',      name:'มินิมอล (Minimalist)',      desc:'น้อยแต่มาก เน้นการใช้สอย' },
+    { id:'thai_oriental',name:'ไทยประยุกต์ (Thai Oriental)',desc:'ผสานความเป็นไทยร่วมสมัย' },
+    { id:'colonial',     name:'โคโลเนียล (Colonial)',     desc:'กลิ่นอายยุโรป คลาสสิก' },
+    { id:'natural',      name:'เนเชอรัล (Natural)',       desc:'กลมกลืนธรรมชาติ' },
+    { id:'tropical',     name:'ทรอปิคอล (Tropical)',       desc:'โปร่ง โล่ง เหมาะอากาศร้อนชื้น' },
+    { id:'vintage',      name:'วินเทจ (Vintage)',          desc:'คลาสสิกย้อนยุค' },
+    { id:'luxury',       name:'ลักซ์ชัวรี่ (Luxury)',      desc:'โอ่อ่า วัสดุคุณภาพสูง' },
+    { id:'retro',        name:'เรโทร (Retro)',             desc:'ย้อนยุค สี/ลายจัดจ้าน' },
+    { id:'thai',         name:'ทรงไทย (Thai)',             desc:'เอกลักษณ์ไทย ระบายอากาศดี' }
+  ];
+  const STYLE_PRESET = {
+    modern:{ roofType:'flat', color:'#e5e7eb' },
+    minimal:{ roofType:'flat', color:'#f3f4f6' },
+    loft:{ roofType:'shed', color:'#cbd5e1' },
+    contemporary:{ roofType:'shed', color:'#eef2f7' },
+    nordic:{ roofType:'gable', color:'#e6f0ff' },
+    classic:{ roofType:'hip', color:'#ede9e9' },
+    colonial:{ roofType:'hip', color:'#f5efe6' },
+    tropical:{ roofType:'gable', color:'#dfeee6' },
+    thai_oriental:{ roofType:'gable', color:'#f0ead2' },
+    thai:{ roofType:'gable', color:'#efe3c8' },
+    natural:{ roofType:'hip', color:'#e7f0e4' },
+    luxury:{ roofType:'hip', color:'#ececec' },
+    vintage:{ roofType:'gable', color:'#f1e8e6' },
+    retro:{ roofType:'flat', color:'#ffe8d6' },
+  };
+
+  /* ---- UI init ---- */
+  function fillStyleSelect(){
+    const sel = $('#styleSel'); if(!sel) return;
+    sel.innerHTML = STYLES.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+    let saved = 'modern';
+    try{ saved = localStorage.getItem('fs_style') || 'modern'; }catch(e){}
+    sel.value = saved;
+    const cur = STYLES.find(x=>x.id===saved);
+    $('#styleDesc').textContent = cur?.desc || '';
+    const preset = STYLE_PRESET[saved];
+    if(preset){
+      $('#roofType').value = preset.roofType;
+      $('#colorMain').value = preset.color;
+    }
+  }
+
+  function faceFromAz(az){
+    const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+    return dirs[Math.round(((az%360)+360)%360/45)%8];
+  }
+
+  function readCfg(){
+    return {
+      plotW:   num($('#plotW').value),
+      plotL:   num($('#plotL').value),
+      floors:  Math.max(1, parseInt($('#floors').value,10)||1),
+      floorH:  num($('#floorH').value),
+      roofType:$('#roofType').value,
+      color:   $('#colorMain').value,
+      gridCols:Math.max(2, Math.min(6, parseInt($('#gridCols').value,10)||3)),
+      gridRows:Math.max(2, Math.min(6, parseInt($('#gridRows').value,10)||3)),
+      azimuth: parseInt($('#azimuth').value,10)||0,
+      owner:   $('#owner').value.trim(),
+      address: $('#address').value.trim(),
+      tambon:  $('#tambon').value.trim(),
+      amphoe:  $('#amphoe').value.trim(),
+      province:$('#province').value.trim(),
+      style:   $('#styleSel').value
+    };
+  }
+
+  function baseDims(cfg){
+    const bldW = Math.min(cfg.plotW*0.8, Math.max(1, cfg.plotW-2));
+    const bldL = Math.min(cfg.plotL*0.7, Math.max(1, cfg.plotL-3));
+    return { bldW, bldL };
+  }
+
+  function computeAreas(cfg){
+    const { bldW, bldL } = baseDims(cfg);
+    const area = bldW*bldL*cfg.floors;
+    return { bldW, bldL, area };
+  }
+
+  /* ---- Draw Plan (SVG) ---- */
+  function drawPlan(){
+    const svg = $('#planSVG'); svg.innerHTML = '';
+    const W=794, H=1123, margin=48;
+    const cfg = readCfg();
+    const { bldW, bldL, area } = computeAreas(cfg);
+
+    // บริเวณวาด
+    const headH = 60, footH = 140;
+    const box = { x: margin, y: margin+headH, w: W - margin*2, h: H - margin*2 - headH - footH };
+
+    // กรอบกระดาษ
+    rect(margin, margin, W-margin*2, H-margin*2, {stroke:'#1f2937','stroke-width':1.5, fill:'#fff'});
+
+    // ชื่อหัวกระดาษ
+    text('แบบแปลนมาตรฐาน (ร่าง) — A4', margin+4, margin+24, {size:18, weight:700});
+    const face = faceFromAz(cfg.azimuth);
+    text(`กำหนดค่าจากระบบ AI House Designer · ทิศหน้าบ้าน: ${face} (${cfg.azimuth}°)`, margin+4, margin+44, {size:13, color:'#475569'});
+
+    // สเกลคำนวณโดยประมาณ
+    const pxPerMM = W / 210; // 794 px / 210 mm
+    // 1 m = s px  → real mm on paper = s / pxPerMM → scale ~= 1000 / (s/pxPerMM)
+    const s = Math.min((box.w-90)/bldW, (box.h-80)/bldL); // px per meter
+    const approxScale = Math.max(20, Math.round(1000 / (s/pxPerMM)));
+    $('#scaleText').textContent = `1:${approxScale}`;
+    $('#areaText').textContent = nice(Math.round(area));
+
+    // ต้นกำเนิดสำหรับวัตถุ
+    const origin = { x: box.x + (box.w - bldW*s)/2, y: box.y + 20 };
+
+    // วาดผังอาคาร (ชั้นล่างเป็นแนวคิด)
+    rect(origin.x, origin.y, bldW*s, bldL*s, {fill:'#f8fafc', stroke:'#111827', 'stroke-width':2});
+
+    // กริดห้อง
+    const cols = cfg.gridCols, rows = cfg.gridRows;
+    for(let i=1;i<cols;i++){
+      line(origin.x + (bldW*s/cols)*i, origin.y, origin.x + (bldW*s/cols)*i, origin.y + bldL*s, {stroke:'#94a3b8','stroke-dasharray':'4 6'});
+    }
+    for(let j=1;j<rows;j++){
+      line(origin.x, origin.y + (bldL*s/rows)*j, origin.x + bldW*s, origin.y + (bldL*s/rows)*j, {stroke:'#94a3b8','stroke-dasharray':'4 6'});
+    }
+
+    // ประตู/หน้าต่างตัวอย่าง
+    text('⌂ ประตู', origin.x+6, origin.y+16, {size:12});
+    text('☐ หน้าต่าง', origin.x+70, origin.y+16, {size:12});
+    // วางหน้าต่างสัก 4 จุด
+    for(let i=0;i<4;i++){
+      const w = 24, h = 8;
+      const wx = origin.x + (i<2? 10 : bldW*s - 10 - w);
+      const wy = origin.y + (i%2===0? 30 : bldL*s - 30 - h);
+      rect(wx, wy, w, h, {fill:'#e2e8f0', stroke:'#1f2937'});
+    }
+    // ประตู 2 จุด
+    rect(origin.x + bldW*s/2 - 8, origin.y - 10, 16, 10, {fill:'#eaeaea', stroke:'#1f2937'});
+    rect(origin.x + bldW*s/2 - 8, origin.y + bldL*s, 16, 10, {fill:'#eaeaea', stroke:'#1f2937'});
+
+    // เข็มทิศ/ทิศบ้าน
+    const cx = box.x + box.w - 70, cy = box.y + 60, r = 36;
+    circle(cx, cy, r, {fill:'#0b1020', stroke:'#1f2937','stroke-width':2});
+    text('N', cx-6, cy-r+16, {size:12, color:'#eab308', weight:700});
+    text('S', cx-4, cy+r-6, {size:12, color:'#93c5fd', weight:700});
+    text('E', cx+r-10, cy+4, {size:12, color:'#fca5a5', weight:700});
+    text('W', cx-r+4, cy+4, {size:12, color:'#86efac', weight:700});
+    // เข็มชี้องศา
+    const rad = cfg.azimuth * Math.PI/180;
+    const nx = cx + (r-6)*Math.sin(rad);
+    const ny = cy - (r-6)*Math.cos(rad);
+    line(cx, cy, nx, ny, {stroke:'#ef4444','stroke-width':3});
+    circle(cx, cy, 4, {fill:'#ef4444', stroke:'#fff','stroke-width':2});
+    // ตัวหนังสือทิศ/องศา
+    text(`ทิศ: ${face} (${cfg.azimuth}°)`, cx-60, cy+ r + 22, {size:12, color:'#475569'});
+
+    // เส้นมิตินอก
+    addDefs();
+    // แนวนอน
+    dim(origin.x, origin.y-14, origin.x + bldW*s, origin.y-14, `${bldW.toFixed(1)} ม.`);
+    // แนวตั้ง
+    dim(origin.x-14, origin.y + bldL*s, origin.x-14, origin.y, `${bldL.toFixed(1)} ม.`);
+
+    // ชื่อ/คำอธิบายด้านล่าง (Title block)
+    drawTitleBlock(cfg, approxScale);
+
+    // สเกลบาร์ (5 ม. ต่อช่วง)
+    drawScaleBar(margin+6, H - margin - 110, s);
+
+    /* ---- helpers to write actual SVG nodes ---- */
+    function rect(x,y,w,h,attrs){ add('rect',{x,y,width:w,height:h,...attrs}); }
+    function line(x1,y1,x2,y2,attrs){ add('line',{x1,y1,x2,y2,...attrs}); }
+    function circle(cx,cy,r,attrs){ add('circle',{cx,cy,r,...attrs}); }
+    function text(t,x,y,opt={}){
+      const el = document.createElementNS('http://www.w3.org/2000/svg','text');
+      el.setAttribute('x',x); el.setAttribute('y',y);
+      el.setAttribute('font-family','Kanit');
+      el.setAttribute('font-size', opt.size||14);
+      if(opt.weight) el.setAttribute('font-weight', opt.weight);
+      if(opt.color) el.setAttribute('fill',opt.color);
+      el.textContent = t; svg.appendChild(el);
+    }
+    function add(name,attrs){
+      const el = document.createElementNS('http://www.w3.org/2000/svg', name);
+      for(const k in attrs){ el.setAttribute(k, attrs[k]); }
+      svg.appendChild(el);
+    }
+    function addDefs(){
+      const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+      defs.innerHTML = `
+        <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L6,3 z" fill="#111827"/>
+        </marker>
+      `;
+      svg.appendChild(defs);
+    }
+    function dim(x1,y1,x2,y2,label){
+      line(x1,y1,x2,y2,{'stroke':'#111827','stroke-width':1.4,'marker-end':'url(#arrow)'});
+      // tick
+      line(x1,y1-6,x1,y1+6,{'stroke':'#111827'});
+      line(x2,y2-6,x2,y2+6,{'stroke':'#111827'});
+      // text
+      const tx = (x1+x2)/2, ty = y1-6;
+      text(label, tx, ty, {size:12}); // center
+      svg.lastChild.setAttribute('text-anchor','middle');
+    }
+    function drawTitleBlock(cfg, scaleN){
+      const x = W - margin - 300, y = H - margin - 120, w = 300, h = 120;
+      rect(x,y,w,h,{fill:'#fff',stroke:'#1f2937','stroke-width':1.2});
+      const L = (k,v,i)=> text(`${k}: ${v}`, x+10, y+22 + i*18, {size:13});
+      L('โครงการ', cfg.owner || '-', 0);
+      L('ที่ตั้ง', `${cfg.address||'-'} ${cfg.tambon||''} ${cfg.amphoe||''} ${cfg.province||''}`, 1);
+      L('จำนวนชั้น', cfg.floors, 2);
+      L('สไตล์/หลังคา', `${cfg.style} / ${cfg.roofType}`, 3);
+      L('สีหลัก', cfg.color, 4);
+      L('สเกล (ประมาณ)', `1:${scaleN}`, 5);
+      // ลิขสิทธิ์
+      const brand = 'Forward Studio — ใช้เพื่อแนวคิดเบื้องต้น';
+      text(brand, x+10, y+h-10, {size:12, color:'#475569'});
+    }
+    function drawScaleBar(x,y,s){
+      const per5m = 5*s; // px
+      const seg = Math.max(1, Math.round(per5m));
+      const totalSeg = 5; // 25m
+      text('Scale Bar (5m per segment)', x, y-8, {size:12, color:'#475569'});
+      for(let i=0;i<totalSeg;i++){
+        rect(x+i*seg, y, seg, 10, {fill: i%2? '#111827':'#e5e7eb', stroke:'#111827'});
+        text(`${(i+1)*5}m`, x+i*seg, y+24, {size:11});
+      }
+    }
+
+    // Update UI texts
+    $('#dirText').textContent = faceFromAz(cfg.azimuth);
+    $('#degText').textContent = cfg.azimuth;
+  }
+
+  /* ---- PNG Export ---- */
+  function exportPNG(){
+    const svg = document.getElementById('planSVG');
+    const data = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+    const url = URL.createObjectURL(new Blob([data], {type:'image/svg+xml;charset=utf-8'}));
+    img.onload = function(){
+      const canvas = document.createElement('canvas');
+      canvas.width  = svg.viewBox.baseVal.width || svg.width.baseVal.value;
+      canvas.height = svg.viewBox.baseVal.height || svg.height.baseVal.value;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img,0,0);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(b=>{
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(b);
+        a.download = 'plan_forward_studio.png';
+        a.click();
+      },'image/png',1);
+    };
+    img.src = url;
+  }
+
+  /* ---- Load from Designer ---- */
+  function pullFromDesigner(){
+    try{
+      const cfg = JSON.parse(localStorage.getItem('fs_house_cfg')||'{}');
+      if(cfg.plotW)   $('#plotW').value   = cfg.plotW;
+      if(cfg.plotL)   $('#plotL').value   = cfg.plotL;
+      if(cfg.floors)  $('#floors').value  = cfg.floors;
+      if(cfg.floorH)  $('#floorH').value  = cfg.floorH;
+      if(cfg.roofType)$('#roofType').value= cfg.roofType;
+      if(cfg.colorMain)$('#colorMain').value= cfg.colorMain;
+      if(typeof cfg.azimuth!=='undefined') $('#azimuth').value = cfg.azimuth;
+      if(cfg.address) $('#address').value = cfg.address;
+      if(cfg.tambon)  $('#tambon').value  = cfg.tambon;
+      if(cfg.amphoe)  $('#amphoe').value  = cfg.amphoe;
+      if(cfg.province)$('#province').value= cfg.province;
+    }catch(e){}
+    try{
+      const s = localStorage.getItem('fs_style');
+      if(s){ $('#styleSel').value = s; const cur = STYLES.find(x=>x.id===s); $('#styleDesc').textContent = cur?.desc||''; }
+      const preset = STYLE_PRESET[s||'modern']; if(preset){ $('#roofType').value=preset.roofType; $('#colorMain').value=preset.color; }
+    }catch(e){}
+    drawPlan();
+  }
+
+  /* ---- Events ---- */
+  function boot(){
+    fillStyleSelect();
+    drawPlan();
+
+    ['plotW','plotL','floors','floorH','roofType','colorMain','gridCols','gridRows','azimuth','owner','address','tambon','amphoe','province','styleSel']
+      .forEach(id=>{
+        const el = document.getElementById(id);
+        el.addEventListener('input', ()=>{
+          if(id==='styleSel'){
+            const s = $('#styleSel').value;
+            const cur = STYLES.find(x=>x.id===s);
+            $('#styleDesc').textContent = cur?.desc||'';
+            const preset = STYLE_PRESET[s]; if(preset){ $('#roofType').value = preset.roofType; $('#colorMain').value = preset.color; }
+          }
+          drawPlan();
+        });
+        el.addEventListener('change', ()=>{ drawPlan(); });
+      });
+
+    $('#btnDraw').addEventListener('click', drawPlan);
+    $('#btnPNG').addEventListener('click', exportPNG);
+    $('#btnPrint').addEventListener('click', ()=>window.print());
+    $('#btnPull').addEventListener('click', pullFromDesigner);
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+
+</body>
+</html>

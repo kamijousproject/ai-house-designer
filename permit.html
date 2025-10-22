@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ขออนุญาตก่อสร้าง — AI House Designer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" charset="utf-8">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body{font-family:'Kanit',sans-serif;background:#f6f8fb}
+    .navbar{background:linear-gradient(90deg,#0ea5e9,#6366f1)}
+    .navbar .nav-link,.navbar-brand{color:#fff!important}
+    .pill{border-radius:999px}
+    .card{border:0;box-shadow:0 8px 24px rgba(15,23,42,.06);border-radius:16px}
+    .badge-soft{background:#e2f2ff;color:#0b65c2;border-radius:999px}
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="./"><i class="fa-solid fa-house-chimney-window me-2"></i>AI ออกแบบสร้างบ้าน</a>
+    <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navMain"><span class="navbar-toggler-icon"></span></button>
+    <div class="collapse navbar-collapse" id="navMain">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="./designer.html">ออกแบบ</a></li>
+        <li class="nav-item"><a class="nav-link" href="./boq.html">BOQ</a></li>
+        <li class="nav-item"><a class="nav-link active" href="./permit.html">ขออนุญาต</a></li>
+        <li class="nav-item"><a class="nav-link" href="./loan.html">สินเชื่อ</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4">
+  <div class="row g-3">
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-2"><i class="fa-solid fa-clipboard-check me-2"></i>ข้อมูลโครงการ</h5>
+          <div class="row g-2">
+            <div class="col-12"><input id="owner" class="form-control" placeholder="ชื่อเจ้าของงาน"></div>
+            <div class="col-12"><input id="address" class="form-control" placeholder="ที่ตั้งก่อสร้าง (บ้านเลขที่/ถนน/หมู่)"></div>
+            <div class="col-6"><input id="tambon" class="form-control" placeholder="ตำบล/แขวง"></div>
+            <div class="col-6"><input id="amphoe" class="form-control" placeholder="อำเภอ/เขต"></div>
+            <div class="col-6"><input id="province" class="form-control" placeholder="จังหวัด"></div>
+            <div class="col-6"><input id="area" type="number" step="0.1" class="form-control" placeholder="พื้นที่ใช้สอย (ตร.ม.)"></div>
+            <div class="col-6">
+              <select id="btype" class="form-select">
+                <option value="res">อาคารอยู่อาศัย</option>
+                <option value="mix">อาคารผสม</option>
+                <option value="com">อาคารพาณิชย์</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <select id="floors" class="form-select">
+                <option>1</option><option>2</option><option>3</option><option>4+</option>
+              </select>
+            </div>
+          </div>
+          <div class="d-grid mt-3 gap-2">
+            <button id="btnGen" class="btn btn-primary pill"><i class="fa-solid fa-list-check me-2"></i>สร้างเช็กลิสต์เอกสาร</button>
+            <button id="btnPrint" class="btn btn-outline-secondary pill"><i class="fa-solid fa-print me-2"></i>พิมพ์/บันทึก PDF</button>
+            <button id="btnCSV" class="btn btn-outline-success pill"><i class="fa-solid fa-file-csv me-2"></i>ดาวน์โหลดเช็กลิสต์ CSV</button>
+          </div>
+          <div class="mt-2 small text-muted">อ้างอิง พ.ร.บ.ควบคุมอาคาร/ข้อบัญญัติท้องถิ่น โปรดตรวจสอบหน่วยงานในพื้นที่อีกครั้ง</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-2">ขั้นตอนขออนุญาตก่อสร้าง</h5>
+          <ol class="mb-3">
+            <li>ตรวจสอบผังเมือง/ข้อจำกัดที่ดิน (สีผังเมือง ระยะร่น แนวอาคาร)</li>
+            <li>ว่าจ้างสถาปนิก/วิศวกรมีใบอนุญาต จัดทำแบบและรายการคำนวณ</li>
+            <li>เตรียมเอกสาร ครบถ้วน พร้อมลงนาม/ประทับตรา</li>
+            <li>ยื่นคำขอที่ อบต./เทศบาล/สำนักงานเขต พร้อมชำระค่าธรรมเนียม</li>
+            <li>รอพิจารณา/แก้ไขแบบ (ถ้ามี)</li>
+            <li>รับใบอนุญาตก่อสร้าง แจ้งวันเริ่มงาน และดำเนินการตามแบบ</li>
+            <li>งานแล้วเสร็จ ขอใบรับรอง/เลขที่บ้าน/ขอติดตั้งมิเตอร์ถาวร</li>
+          </ol>
+
+          <h6 class="mb-2">เช็กลิสต์เอกสารที่ต้องเตรียม</h6>
+          <div class="mb-2 small">
+            <span class="badge badge-soft me-1">บัตรประชาชน</span>
+            <span class="badge badge-soft me-1">โฉนด/เอกสารสิทธิ์</span>
+            <span class="badge badge-soft me-1">แบบสถาปัตย์/โครงสร้าง</span>
+            <span class="badge badge-soft me-1">รายการคำนวณ/เซ็นรับรอง</span>
+          </div>
+          <ul id="docList" class="mb-0"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="text-center py-4 text-muted small">
+  Copyright © <strong>Forward Studio</strong>
+</footer>
+
+<script charset="utf-8" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function(){
+  const $ = s=>document.querySelector(s);
+
+  function buildDocs(){
+    const btype = $('#btype').value;
+    const floors = $('#floors').value;
+    const area = parseFloat($('#area').value||0);
+
+    const base = [
+      'สำเนาบัตรประชาชนและสำเนาทะเบียนบ้านของผู้ยื่น',
+      'สำเนาโฉนด/เอกสารสิทธิ์ + แผนที่สังเขปที่ตั้งโครงการ',
+      'หนังสือยินยอมเจ้าของที่ดิน (หากผู้ยื่นไม่ใช่เจ้าของ)',
+      'แบบสถาปัตยกรรม/โครงสร้าง/ไฟฟ้า/ประปา พร้อมลงนามโดยผู้ออกแบบ',
+      'รายการคำนวณโครงสร้าง เซ็นโดยวิศวกร',
+      'สำเนาใบอนุญาตประกอบวิชาชีพ สถาปนิก/วิศวกร',
+      'แบบพิมพ์คำขอ และใบรับรองต่าง ๆ ของหน่วยงานท้องถิ่น',
+    ];
+
+    const extra = [];
+    if (floors==='4+' || area>=2000) extra.push('รายงานวิเคราะห์ผลกระทบ/ความปลอดภัยตามที่กฎหมายกำหนด');
+    if (btype==='mix' || btype==='com') extra.push('เอกสารระบบป้องกันอัคคีภัย/อพยพหนีไฟ');
+
+    const all = base.concat(extra);
+    const ul = $('#docList');
+    ul.innerHTML = all.map(t=>`<li>${t}</li>`).join('');
+    return all;
+  }
+
+  function toCSV(rows){
+    return rows.map(r=>`"${String(r).replace(/"/g,'""')}"`).join('\n');
+  }
+
+  $('#btnGen').addEventListener('click', buildDocs);
+  $('#btnCSV').addEventListener('click', ()=>{
+    const rows = buildDocs();
+    const blob = new Blob([toCSV(rows)], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'permit_checklist_forward_studio.csv';
+    a.click();
+  });
+  $('#btnPrint').addEventListener('click', ()=>window.print());
+
+  // init once
+  buildDocs();
+})();
+</script>
+</body>
+</html>

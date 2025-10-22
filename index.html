@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="th" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AI House Designer — เริ่มไอเดียบ้านในไม่กี่คลิก | Forward Studio</title>
+  <meta name="description" content="กำหนดที่ดิน เลือกสไตล์ พรีวิว 3D สร้างแบบแปลนและ BOQ อัตโนมัติ พร้อมแผนที่วิเคราะห์แดด/ลม — พัฒนาโดย Forward Studio">
+
+  <!-- Preconnects / Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS libs -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="./assets/css/app.css" rel="stylesheet">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="AI House Designer — Forward Studio">
+  <meta property="og:description" content="เริ่มไอเดียบ้านในไม่กี่คลิก พรีวิว 3D | แปลน | BOQ | แผนที่แดดลม">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://forwardstudio.co.th/ai-house-designer/index.html">
+  <meta property="og:image" content="https://forwardstudio.co.th/ai-house-designer/assets/images/og/cover.jpg">
+
+  <!-- JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"WebApplication",
+    "name":"AI House Designer",
+    "applicationCategory":"DesignApplication",
+    "operatingSystem":"Web",
+    "offers":{"@type":"Offer","price":"0","priceCurrency":"THB"},
+    "creator":{"@type":"Organization","name":"Forward Studio"}
+  }
+  </script>
+
+  <!-- Small inline utilities to avoid Tailwind dependency -->
+  <style>
+    :root { --fs-accent:#7bf0ff; --fs-grad1:#7bf0ff; --fs-grad2:#8e7bff; }
+    body{ font-family: 'Kanit', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans Thai', sans-serif; }
+    .navbar{ background: radial-gradient(1200px 300px at 30% -100px, rgba(126,255,240,.25), transparent 60%), #0f1115; }
+    .hero-wrap{ position:relative; padding:64px 0 32px;}
+    .hero-bg{ position:absolute; inset:0; background:
+      radial-gradient(800px 300px at 80% -50px, rgba(142,123,255,.25), transparent 60%),
+      radial-gradient(900px 260px at 10% 0, rgba(123,240,255,.18), transparent 60%); z-index:-1;}
+    .pill{ background: rgba(255,255,255,.08); border-radius:999px; padding:.5rem .875rem; }
+    .grad-text{ background: linear-gradient(90deg, var(--fs-grad1), var(--fs-grad2)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+    .btn-cta{ background: linear-gradient(90deg, var(--fs-grad1), var(--fs-grad2)); border:none; color:#0b1020; font-weight:700;}
+    .btn-ghost{ border:1px solid rgba(255,255,255,.2); color:#e9f5ff; background:transparent; }
+    .small-muted{ color:#aab3c2; }
+    .feature-card{ display:block; padding:1rem; background:#121520; border:1px solid rgba(255,255,255,.08); border-radius:1rem; height:100%; text-decoration:none; color:inherit;}
+    .feature-card:hover{ border-color: rgba(123,240,255,.5); transform: translateY(-2px); transition: .2s ease; }
+    .icon-wrap{ width:42px; height:42px; display:grid; place-items:center; background: rgba(123,240,255,.15); border-radius:.75rem; margin-bottom:.5rem;}
+    .object-cover{ object-fit:cover; } /* replaces tailwind */
+    .hero-gallery{ position:relative; border-radius:1rem; overflow:hidden; background:#0b0e14; }
+    .overlay-choose{ position:absolute; inset:auto 0 0 0; display:flex; justify-content:space-between; align-items:center; gap:.5rem; padding:.5rem .75rem; background: linear-gradient(0deg, rgba(0,0,0,.65), transparent); }
+    .choose-style-btn{ backdrop-filter: blur(6px); }
+    @media (prefers-reduced-motion: reduce) {
+      .carousel, .carousel *{ transition:none !important; animation-duration: 0.001s !important; }
+    }
+  </style>
+</head>
+
+<body data-page="home">
+<!-- ===== Navbar (ติดหน้า) ===== -->
+<header>
+  <nav class="navbar navbar-expand-lg navbar-dark" role="navigation" aria-label="หลัก">
+    <div class="container">
+      <a class="navbar-brand fw-bold d-flex align-items-center" href="/ai-house-designer/index.html">
+        <i class="fa-solid fa-house-chimney-window me-2" aria-hidden="true"></i><span>Forward Studio</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav" aria-controls="topNav" aria-expanded="false" aria-label="เปิดเมนู">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="topNav">
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link active" href="/ai-house-designer/index.html" aria-current="page">หน้าแรก</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/designer.html">Designer</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/plan.html">แบบแปลน</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/boq.html">BOQ</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/map.html">แผนที่/แดดลม</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/permit.html">ขออนุญาต</a></li>
+          <li class="nav-item"><a class="nav-link" href="/ai-house-designer/loan.html">สินเชื่อ</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<!-- ===== Hero ===== -->
+<section class="hero-wrap">
+  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="container hero-content">
+    <div class="row align-items-center g-4">
+      <!-- Left text -->
+      <div class="col-lg-7">
+        <span class="pill mb-3 d-inline-flex align-items-center gap-2">
+          <i class="fa-solid fa-sparkles" aria-hidden="true"></i> AI House Designer รุ่นทดลอง
+        </span>
+
+        <h1 class="hero-title h2 h1-lg">เริ่มไอเดียบ้านใน <span class="grad-text">ไม่กี่คลิก</span></h1>
+        <p class="hero-sub lead">
+          กำหนดที่ดิน เลือกสไตล์ พรีวิว 3D สร้างแบบแปลนและ BOQ อัตโนมัติ พร้อมแผนที่วิเคราะห์แดด/ลม
+        </p>
+
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <a class="btn btn-cta" href="/ai-house-designer/designer.html">
+            <i class="fa-solid fa-wand-magic-sparkles me-2" aria-hidden="true"></i>เริ่มออกแบบ
+          </a>
+          <a class="btn btn-ghost" href="/ai-house-designer/boq.html">
+            <i class="fa-solid fa-file-invoice-dollar me-2" aria-hidden="true"></i>ดู BOQ ตัวอย่าง
+          </a>
+          <a class="btn btn-ghost" href="/ai-house-designer/permit.html">
+            <i class="fa-solid fa-file-signature me-2" aria-hidden="true"></i>ขออนุญาตก่อสร้าง
+          </a>
+          <a class="btn btn-ghost" href="/ai-house-designer/loan.html">
+            <i class="fa-solid fa-landmark me-2" aria-hidden="true"></i>ขอสินเชื่อ/คำนวณผ่อน
+          </a>
+        </div>
+
+        <div class="trust mt-4 small-muted">
+          <i class="fa-regular fa-circle-check me-2" aria-hidden="true"></i>
+          พัฒนาโดย Forward Studio — ใช้งานฟรีขั้นต้น เติมเครดิตเมื่อ Export ขั้นสูง
+        </div>
+      </div>
+
+      <!-- Right hero gallery -->
+      <div class="col-lg-5">
+        <div class="hero-gallery card shadow-sm">
+          <div id="heroCarousel" class="carousel slide carousel-fade"
+               data-bs-ride="carousel" data-bs-interval="3500" data-bs-pause="hover" aria-label="แกลเลอรีสไตล์บ้าน">
+
+            <div class="carousel-indicators">
+              <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-label="ภาพ 1" aria-current="true"></button>
+              <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1" aria-label="ภาพ 2"></button>
+            </div>
+
+            <div class="carousel-inner ratio ratio-16x9">
+              <!-- Slide 1 -->
+              <div class="carousel-item active">
+                <picture>
+                  <source srcset="../assets/images/hero/modern-1600.webp 1600w, ./assets/images/hero/modern-1200.webp 1200w" type="image/webp">
+                  <img class="w-100 h-100 object-cover js-lightbox"
+                       src="../assets/images/hero/modern-1600.webp"
+                       alt="บ้านสไตล์โมเดิร์น — มุมมอง 1"
+                       data-style="modern" fetchpriority="high" decoding="async">
+                </picture>
+              </div>
+
+              <!-- Slide 2 -->
+              <div class="carousel-item">
+                <picture>
+                  <source srcset="./assets/images/hero/modern-1600.webp 1600w, ./assets/images/hero/modern-1200.webp 1200w" type="image/webp">
+                  <img class="w-100 h-100 object-cover js-lightbox"
+                       src="./assets/images/hero/modern-1200.webp"
+                       alt="บ้านสไตล์โมเดิร์น — มุมมอง 2"
+                       data-style="modern" loading="lazy" decoding="async">
+                </picture>
+              </div>
+            </div>
+
+            <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev" aria-label="ภาพก่อนหน้า">
+              <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next" aria-label="ภาพถัดไป">
+              <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            </button>
+
+            <!-- Action overlay (แยกปุ่มเลือกสไตล์ออกจากรูปเพื่อไม่ชนกับ lightbox) -->
+            <div class="overlay-choose">
+              <span class="small-muted ms-1">สไตล์: โมเดิร์น</span>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-light choose-style-btn" data-style="modern">
+                  <i class="fa-solid fa-check me-1" aria-hidden="true"></i>เลือกสไตล์นี้
+                </button>
+                <button class="btn btn-sm btn-outline-light open-lightbox-btn">
+                  <i class="fa-regular fa-image me-1" aria-hidden="true"></i>ดูภาพใหญ่
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div><!-- /row -->
+  </div><!-- /container -->
+</section>
+
+<!-- ===== Features ===== -->
+<section class="container py-5">
+  <div class="row g-3">
+    <div class="col-md-6 col-lg-4">
+      <a href="/ai-house-designer/designer.html" class="feature-card">
+        <div class="icon-wrap"><i class="fa-solid fa-cube" aria-hidden="true"></i></div>
+        <h5 class="mb-1">พรีวิว 3D + ตั้งค่าบ้าน</h5>
+        <p class="mb-0 small-muted">กำหนดขนาดที่ดิน/สไตล์/ชั้น/สี และดูโมเดล 3D ทันที</p>
+      </a>
+    </div>
+    <div class="col-md-6 col-lg-4">
+      <a href="/ai-house-designer/plan.html" class="feature-card">
+        <div class="icon-wrap"><i class="fa-solid fa-ruler-combined" aria-hidden="true"></i></div>
+        <h5 class="mb-1">แบบแปลนมาตรฐาน</h5>
+        <p class="mb-0 small-muted">สร้างแปลน SVG สเกล 1:100 พิมพ์/ดาวน์โหลด PNG ได้</p>
+      </a>
+    </div>
+    <div class="col-md-6 col-lg-4">
+      <a href="/ai-house-designer/boq.html" class="feature-card">
+        <div class="icon-wrap"><i class="fa-solid fa-table-list" aria-hidden="true"></i></div>
+        <h5 class="mb-1">คำนวณ BOQ</h5>
+        <p class="mb-0 small-muted">สูตรมาตรฐาน ปรับราคา/หน่วยเองได้ และ Export PDF/CSV</p>
+      </a>
+    </div>
+    <div class="col-md-6 col-lg-4">
+      <a href="/ai-house-designer/map.html" class="feature-card">
+        <div class="icon-wrap"><i class="fa-solid fa-sun" aria-hidden="true"></i></div>
+        <h5 class="mb-1">แผนที่/แดดลม</h5>
+        <p class="mb-0 small-muted">ระบุตำแหน่งที่ดิน วิเคราะห์ทิศแดดและลมมรสุมเบื้องต้น</p>
+      </a>
+    </div>
+    <div class="col-md-6 col-lg-4">
+      <a href="/ai-house-designer/contractors.html" class="feature-card">
+        <div class="icon-wrap"><i class="fa-solid fa-user-helmet-safety" aria-hidden="true"></i></div>
+        <h5 class="mb-1">ค้นหาผู้รับเหมา</h5>
+        <p class="mb-0 small-muted">ลิงก์ค้นหาในพื้นที่ พร้อมเช็คลิสต์คัดเลือกผู้รับเหมา</p>
+      </a>
+    </div>
+    <div class="col-md-6 col-lg-4">
+      <a href="/ai-house-designer/feng.html" class="feature-card">
+        <div class="icon-wrap"><i class="fa-solid fa-yin-yang" aria-hidden="true"></i></div>
+        <h5 class="mb-1">วิเคราะห์ฮวงจุ้ย</h5>
+        <p class="mb-0 small-muted">คำแนะนำโทนสี/การจัดวางตามทิศ (เพื่อความสบายใจ)</p>
+      </a>
+    </div>
+    <div class="col-md-6 col-lg-4">
+      <a href="/ai-house-designer/permit.html" class="feature-card">
+        <div class="icon-wrap"><i class="fa-solid fa-file-signature" aria-hidden="true"></i></div>
+        <h5 class="mb-1">ขออนุญาตก่อสร้าง</h5>
+        <p class="mb-0 small-muted">ขั้นตอน/เอกสาร/แนวทางยื่นตาม พ.ร.บ.ควบคุมอาคาร</p>
+      </a>
+    </div>
+    <div class="col-md-6 col-lg-4">
+      <a href="/ai-house-designer/loan.html" class="feature-card">
+        <div class="icon-wrap"><i class="fa-solid fa-landmark" aria-hidden="true"></i></div>
+        <h5 class="mb-1">ขอสินเชื่อ/คำนวณผ่อน</h5>
+        <p class="mb-0 small-muted">คำนวณดอกเบี้ย-งวดผ่อน และส่งคำขอไปยังธนาคาร</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Footer ===== -->
+<footer class="text-center py-4 small-muted">
+  Copyright © <strong>Forward Studio</strong> — สงวนลิขสิทธิ์
+</footer>
+
+<!-- Lightbox Modal -->
+<div class="modal fade" id="lightbox" tabindex="-1" aria-hidden="true" aria-label="ภาพตัวอย่างขนาดใหญ่">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content bg-dark">
+      <button class="btn btn-light position-absolute end-0 m-2" data-bs-dismiss="modal" aria-label="ปิด">ปิด</button>
+      <img id="lightboxImg" class="img-fluid rounded-3" alt="">
+    </div>
+  </div>
+</div>
+
+<noscript>
+  <div class="container my-4 alert alert-warning">เว็บไซต์นี้ใช้ JavaScript เพื่อการทำงานของแกลเลอรีและปุ่มเลือกสไตล์ กรุณาเปิดการทำงานของ JavaScript</div>
+</noscript>
+
+<!-- JS libs -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+
+<!-- Page JS: lightbox + choose style + reduced motion -->
+<script>
+(function(){
+  'use strict';
+
+  // Pause carousel if prefers-reduced-motion
+  try {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const c = document.getElementById('heroCarousel');
+      if (c) c.removeAttribute('data-bs-ride');
+    }
+  } catch(e){}
+
+  // Lightbox (open via button OR clicking image)
+  const lightboxEl = document.getElementById('lightbox');
+  let lightboxModal = null;
+  const lightboxImg = document.getElementById('lightboxImg');
+  
+  // Initialize modal once
+  if (lightboxEl) {
+    lightboxModal = new bootstrap.Modal(lightboxEl);
+  }
+
+  document.addEventListener('click', (ev) => {
+    // open-lightbox-btn
+    const openBtn = ev.target.closest('.open-lightbox-btn');
+    if (openBtn) {
+      const activeImg = document.querySelector('#heroCarousel .carousel-item.active img');
+      if (activeImg && lightboxImg && lightboxModal) {
+        lightboxImg.src = activeImg.currentSrc || activeImg.src;
+        lightboxModal.show();
+      }
+      return;
+    }
+
+    // click on any image with js-lightbox
+    const img = ev.target.closest('.js-lightbox');
+    if (img) {
+      if (lightboxImg && lightboxModal) {
+        lightboxImg.src = img.currentSrc || img.src;
+        lightboxModal.show();
+      }
+      return;
+    }
+
+    // choose style button
+    const choose = ev.target.closest('.choose-style-btn');
+    if (choose) {
+      const style = choose.getAttribute('data-style') || 'modern';
+      try { localStorage.setItem('fs_style', style); } catch(e){}
+      window.location.href = '/ai-house-designer/designer.html';
+      return;
+    }
+  }, { passive: true });
+
+  // Guard: avoid accidental navigation from carousel controls
+  document.getElementById('heroCarousel')?.addEventListener('slide.bs.carousel', function(){ /* no-op; kept for future hooks */ });
+
+})();
+</script>
+</body>
+</html>

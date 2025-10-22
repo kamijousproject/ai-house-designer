@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Designer — AI House Designer</title>
+  <meta name="description" content="ตั้งค่าที่ดิน สไตล์บ้าน พรีวิว 3D วาดแปลน SVG คำนวณ BOQ พร้อมส่งออกไฟล์ — Forward Studio">
+
+  <!-- CSS & Fonts -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+        crossorigin="anonymous" />
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <link href="./assets/css/app.css" rel="stylesheet" />
+
+  <style>
+    /* ========== Base ========== */
+    :root{ --brand:#0ea5e9; --accent:#6366f1; --ink:#0f172a; --muted:#64748b; --bg:#f6f8fb; --card:#ffffff; }
+    html,body{height:100%}
+    body{
+      font-family:"Kanit",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans","Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+      background:var(--bg); color:var(--ink);
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* Navbar */
+    .navbar{background:linear-gradient(90deg,var(--brand),var(--accent))}
+    .navbar .nav-link,.navbar-brand,.navbar .navbar-text{color:#fff!important}
+    .pill{border-radius:999px}
+
+    /* Buttons */
+    .btn-cta{background:linear-gradient(90deg,var(--brand),var(--accent)); color:#fff; border:0; padding:.7rem 1.1rem; border-radius:999px; box-shadow:0 8px 20px rgba(14,165,233,.25)}
+    .btn-cta:hover{filter:brightness(.97); color:#fff}
+    .btn-ghost{background:#fff; border:1px solid #e5e7eb; color:var(--ink); padding:.7rem 1.1rem; border-radius:999px}
+    .btn-ghost:hover{background:#f8fafc}
+
+    /* Tags / text utils */
+    .badge-soft{background:#e2f2ff;color:#0b65c2;border-radius:999px;padding:.35rem .65rem;font-size:.9rem}
+    .small-muted{color:var(--muted);font-size:.95rem}
+
+    /* Style chooser */
+    .style-card{border:1px solid #e5e7eb;border-radius:12px;cursor:pointer;background:#fff;transition:all .2s ease}
+    .style-card:hover{box-shadow:0 6px 18px rgba(15,23,42,.08)}
+    .style-card.active{border-color:var(--brand);box-shadow:0 0 0 3px rgba(14,165,233,.18)}
+    .style-card .ic{width:36px;height:36px;border-radius:10px;background:rgba(14,165,233,.1);display:flex;align-items:center;justify-content:center;color:#0b65c2}
+
+    .card{border:0;box-shadow:0 8px 24px rgba(15,23,42,.06);border-radius:16px}
+
+    /* Viewport / Plan */
+    #viewport{ width:100%; height:clamp(360px, 60vh, 640px); min-height:360px; background:#0b1020; border-radius:12px; overflow:hidden; position:relative }
+    #viewport .fallback{position:absolute;inset:0;display:grid;place-items:center;color:#a7b0c6;padding:1rem;text-align:center}
+    #planWrap{background:#fff;border:1px dashed #e5e7eb;border-radius:12px;padding:8px}
+
+    @media (max-width: 991px){ .hero-sub{font-size:1.05rem} }
+    footer{color:#6b7280}
+
+    /* Print: ซ่อน 3D, เน้นแปลน/BOQ */
+    @media print{
+      #viewport, .no-print { display:none !important; }
+      #planWrap, #boqTable { break-inside: avoid; }
+      body{ background:#fff; }
+      .card{ box-shadow:none!important; }
+    }
+  </style>
+</head>
+
+<body data-page="designer">
+  <header data-include></header>
+
+  <div class="container-fluid p-3">
+    <div class="row g-3">
+      <!-- Left: Controls -->
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <h5 class="mb-0"><i class="fa-solid fa-sliders me-2" aria-hidden="true"></i>ตั้งค่าโครงการ</h5>
+              <div class="small-muted">กด <span class="badge-soft">R</span> เพื่อ Render ใหม่</div>
+            </div>
+
+            <!-- AI prompt -->
+            <div class="mb-3">
+              <label for="aiPrompt" class="form-label">สั่งงานด้วย AI</label>
+              <textarea id="aiPrompt" class="form-control" rows="2" placeholder="เช่น บ้านโมเดิร์น 2 ชั้น หลังคาแบน สีขาวเทา พื้นที่ ~180 ตร.ม. ดินอ่อน"></textarea>
+              <div class="d-flex gap-2 mt-2">
+                <button id="aiBtn" class="btn btn-primary btn-sm pill"><i class="fa-solid fa-wand-magic-sparkles me-1" aria-hidden="true"></i>สร้างจากคำสั่ง</button>
+                <button id="loadLast" class="btn btn-outline-secondary btn-sm pill"><i class="fa-solid fa-clock-rotate-left me-1" aria-hidden="true"></i>โหลดการตั้งค่าล่าสุด</button>
+              </div>
+              <div class="small-muted mt-1">ตัวอย่าง: “นอร์ดิก 2 ชั้น หลังคาจั่ว สีอ่อน พื้นที่ ~220 ตร.ม. พื้นที่เสี่ยงน้ำท่วม”</div>
+            </div>
+
+            <!-- Helper: Best match -->
+            <div class="mb-3 border rounded p-2">
+              <label class="form-label mb-1"><i class="fa-solid fa-wand-magic-sparkles me-1" aria-hidden="true"></i>หาแบบที่เหมาะที่สุด</label>
+              <div class="row g-2">
+                <div class="col-6">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text">พื้นที่เป้า</span>
+                    <input id="goalArea" type="number" class="form-control" value="180" min="20" step="1" />
+                    <span class="input-group-text">ตร.ม.</span>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text">งบสูงสุด</span>
+                    <input id="budgetMax" type="number" class="form-control" value="2500000" min="0" step="1000" />
+                    <span class="input-group-text">บาท</span>
+                  </div>
+                </div>
+              </div>
+              <div class="d-grid mt-2">
+                <button id="bestBtn" class="btn btn-success btn-sm pill">หาแบบที่เหมาะที่สุด</button>
+              </div>
+              <div id="bestResult" class="small-muted mt-2" role="status" aria-live="polite"></div>
+            </div>
+
+            <!-- Plot & structure inputs -->
+            <div class="row g-2" id="inputGrid">
+              <div class="col-6"><label class="form-label" for="plotW">กว้าง (ม.)</label><input id="plotW" type="number" class="form-control" value="12" min="4" step="0.1" inputmode="decimal" /></div>
+              <div class="col-6"><label class="form-label" for="plotL">ยาว (ม.)</label><input id="plotL" type="number" class="form-control" value="20" min="6" step="0.1" inputmode="decimal" /></div>
+              <div class="col-6"><label class="form-label" for="floors">ชั้น</label>
+                <select id="floors" class="form-select">
+                  <option value="1">1</option>
+                  <option value="2" selected>2</option>
+                  <option value="3">3</option>
+                </select>
+              </div>
+              <div class="col-6"><label class="form-label" for="floorH">สูง/ชั้น (ม.)</label><input id="floorH" type="number" class="form-control" value="3" min="2.6" max="4" step="0.1" inputmode="decimal" /></div>
+              <div class="col-6"><label class="form-label" for="roofType">หลังคา</label>
+                <select id="roofType" class="form-select">
+                  <option value="gable">จั่ว</option>
+                  <option value="hip">ปั้นหยา</option>
+                  <option value="shed">เพิงหมาแหงน</option>
+                  <option value="flat">ดาดฟ้า</option>
+                </select>
+              </div>
+              <div class="col-6"><label class="form-label" for="colorMain">สีหลัก</label><input id="colorMain" type="color" class="form-control form-control-color" value="#e0e7ff" /></div>
+              <div class="col-6 form-check ms-2"><input id="floodRisk" class="form-check-input" type="checkbox" /><label class="form-check-label" for="floodRisk">พื้นที่เสี่ยงน้ำท่วม</label></div>
+              <div class="col-6 form-check"><input id="softSoil" class="form-check-input" type="checkbox" /><label class="form-check-label" for="softSoil">ดินอ่อน</label></div>
+            </div>
+
+            <!-- Style selector -->
+            <div class="mb-3">
+              <label class="form-label mt-2" for="styleSel">รูปแบบบ้าน</label>
+              <select id="styleSel" class="form-select mb-2" aria-describedby="styleDesc"></select>
+              <div id="styleDesc" class="small-muted"></div>
+              <div id="styleGallery" class="row g-2 mt-2" role="list"></div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="small-muted">พื้นที่ใช้สอย ~ <span id="areaDisplay">0</span> ตร.ม.</div>
+              <div class="d-flex gap-2 no-print">
+                <button id="saveCfg" class="btn btn-outline-secondary btn-sm pill"><i class="fa-solid fa-floppy-disk me-1" aria-hidden="true"></i>บันทึก</button>
+                <button id="resetCfg" class="btn btn-outline-danger btn-sm pill"><i class="fa-solid fa-rotate-left me-1" aria-hidden="true"></i>รีเซ็ต</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Preview & Outputs -->
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between">
+              <h6 class="mb-2">พรีวิว 3D</h6>
+              <div class="no-print">
+                <button id="dlImage" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-camera me-1" aria-hidden="true"></i>บันทึกภาพ</button>
+              </div>
+            </div>
+            <div id="viewport" aria-label="3D Preview">
+              <div class="fallback">
+                <div class="mb-2"><i class="fa-solid fa-cube fa-2xl" aria-hidden="true"></i></div>
+                <div>กำลังโหลดตัวเรนเดอร์… หากไม่แสดง ระบบจะลอง CDN อื่นและไฟล์สำรองอัตโนมัติ</div>
+              </div>
+            </div>
+
+            <hr />
+            <div class="d-flex align-items-center justify-content-between">
+              <h6 class="mb-2">แบบแปลน</h6>
+              <div class="no-print">
+                <button id="dlPlanPng" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-image me-1" aria-hidden="true"></i>Export PNG</button>
+              </div>
+            </div>
+            <div id="planWrap"><svg id="planSVG" width="794" height="340" role="img" aria-label="SVG House Plan"></svg></div>
+
+            <hr />
+            <div class="d-flex align-items-center justify-content-between">
+              <h6 class="mb-2">BOQ</h6>
+              <div class="no-print">
+                <button id="dlBoqCsv" class="btn btn-sm btn-outline-success"><i class="fa-solid fa-file-csv me-1" aria-hidden="true"></i>Export CSV</button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle" id="boqTable">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>งาน</th>
+                    <th class="text-end">ปริมาณ</th>
+                    <th>หน่วย</th>
+                    <th class="text-end">ราคา/หน่วย</th>
+                    <th class="text-end">รวม</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+                <tfoot>
+                  <tr class="table-light"><th colspan="5" class="text-end">รวมค่าวัสดุ</th><th class="text-end" id="sumMat">0</th></tr>
+                  <tr class="table-light"><th colspan="5" class="text-end">+ OH (30%)</th><th class="text-end" id="sumOH">0</th></tr>
+                  <tr class="table-primary"><th colspan="5" class="text-end">รวมทั้งหมด</th><th class="text-end" id="sumAll">0</th></tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer data-include></footer>
+
+  <!-- JS: Bootstrap -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+          defer
+          integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+          crossorigin="anonymous"></script>
+
+  <script>
+  (function(){
+    'use strict';
+
+    /* ========== Helpers ========== */
+    const $ = (sel, ctx=document) => ctx.querySelector(sel);
+    const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
+    const clamp = (n,min,max)=> Math.min(Math.max(n,min),max);
+    const debounce = (fn,ms)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+    const fmtTH = new Intl.NumberFormat('th-TH');
+    const THB = n => new Intl.NumberFormat('th-TH',{style:'currency',currency:'THB',maximumFractionDigits:0}).format(n||0);
+
+    /* ========== State ========== */
+    const App = {
+      threeReady:false, scene:null, renderer:null, camera:null, controls:null, mesh:null, roof:null,
+      styleList: [
+        {id:'modern',   name:'Modern',   icon:'fa-vector-square',   desc:'เส้นสายเรียบคม โทนสีโมโน พื้นที่โปร่งโล่ง'},
+        {id:'nordic',   name:'Nordic',   icon:'fa-mountain-sun',    desc:'เรียบอบอุ่น ไม้โทนอ่อน หลังคาจั่วเด่น'},
+        {id:'loft',     name:'Loft',     icon:'fa-city',            desc:'ปูนเปลือย เหล็กดำ ช่องแสงขนาดใหญ่'},
+        {id:'tropical', name:'Tropical', icon:'fa-umbrella-beach',  desc:'กันแดดกันฝน ระบายอากาศดี เหมาะอากาศร้อนชื้น'}
+      ],
+      cfg: { plotW:12, plotL:20, floors:2, floorH:3, roofType:'gable', color:'#e0e7ff', floodRisk:false, softSoil:false, style:'modern' }
+    };
+
+    /* ========== Storage ========== */
+    const AUTOKEY = 'ai_house_cfg_v2';
+    const autosave = ()=>{ try{ localStorage.setItem(AUTOKEY, JSON.stringify(App.cfg)); }catch(e){} };
+    const autoload = ()=>{ try{ const raw=localStorage.getItem(AUTOKEY); return raw? JSON.parse(raw): null; }catch(e){ return null; } };
+
+    /* ========== Partials include with fallback ========== */
+    const DEFAULT_NAV_HTML = `
+      <nav class="navbar navbar-expand-lg" role="navigation" aria-label="เมนูหลัก">
+        <div class="container-fluid">
+          <a class="navbar-brand fw-bold d-flex align-items-center" href="/ai-house-designer/index.html">
+            <i class="fa-solid fa-cubes-stacked me-2" aria-hidden="true"></i><span>AI House Designer</span>
+          </a>
+          <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="เปิดเมนู">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navMain">
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+              <li class="nav-item"><a class="nav-link fw-semibold" aria-current="page" href="#">Designer</a></li>
+              <li class="nav-item"><a class="nav-link" href="/ai-house-designer/plan.html">แบบแปลน</a></li>
+              <li class="nav-item"><a class="nav-link" href="/ai-house-designer/boq.html">BOQ</a></li>
+              <li class="nav-item"><a class="nav-link" href="/ai-house-designer/feng.html">ฮวงจุ้ย</a></li>
+              <li class="nav-item"><a class="nav-link" href="/ai-house-designer/permit.html">ขออนุญาต</a></li>
+              <li class="nav-item"><a class="nav-link" href="/ai-house-designer/loan.html">สินเชื่อ</a></li>
+            </ul>
+          </div>
+        </div>
+      </nav>`;
+    const DEFAULT_FOOT_HTML = `<div class="container py-4 small text-center">Copyright © Forward Studio Co.,Ltd.</div>`;
+    const partialCandidates = (name)=>[
+      `./partials/${name}.html`,
+      `../partials/${name}.html`,
+      `/partials/${name}.html`,
+      `/ai-house-designer/partials/${name}.html`
+    ];
+    async function fetchFirst(urls, timeout=6000){
+      for(const url of urls){
+        const ctrl = new AbortController();
+        const tid = setTimeout(()=>ctrl.abort('timeout'), timeout);
+        try{
+          const resp = await fetch(url, { cache:'no-store', signal: ctrl.signal });
+          clearTimeout(tid);
+          if (!resp.ok) continue;
+          const html = await resp.text();
+          if (/404|Not Found|IT Security|Back To Home/i.test(html) && html.length<5000) continue;
+          return html;
+        }catch(e){ clearTimeout(tid); /* try next */ }
+      }
+      return null;
+    }
+    async function includePartials(){
+      for (const el of $$('[data-include]')){
+        const name = el.tagName.toLowerCase();
+        const html = await fetchFirst(partialCandidates(name));
+        el.innerHTML = html || (name==='header'? DEFAULT_NAV_HTML : name==='footer'? DEFAULT_FOOT_HTML : '');
+      }
+    }
+
+    /* ========== UI Binding ========== */
+    function readNumber(id, def, min, max){
+      const v = parseFloat($(id).value.replace(',', '.'));
+      if (Number.isNaN(v)) return def;
+      return clamp(v, min, max);
+    }
+    function readForm(){
+      App.cfg.plotW   = readNumber('#plotW', 12, 4, 100);
+      App.cfg.plotL   = readNumber('#plotL', 20, 6, 200);
+      App.cfg.floors  = clamp(parseInt($('#floors').value)||2, 1, 3);
+      App.cfg.floorH  = readNumber('#floorH', 3, 2.6, 4);
+      App.cfg.roofType= $('#roofType').value;
+      App.cfg.color   = $('#colorMain').value || '#e0e7ff';
+      App.cfg.floodRisk = $('#floodRisk').checked;
+      App.cfg.softSoil  = $('#softSoil').checked;
+      App.cfg.style   = $('#styleSel').value || 'modern';
+    }
+    function applyConfigToForm(cfg){
+      $('#plotW').value = cfg.plotW ?? 12;
+      $('#plotL').value = cfg.plotL ?? 20;
+      $('#floors').value = cfg.floors ?? 2;
+      $('#floorH').value = cfg.floorH ?? 3;
+      $('#roofType').value = cfg.roofType ?? 'gable';
+      if((cfg.color||'').startsWith('#')) $('#colorMain').value = cfg.color;
+      $('#floodRisk').checked = !!cfg.floodRisk;
+      $('#softSoil').checked = !!cfg.softSoil;
+      $('#styleSel').value = cfg.style ?? 'modern';
+    }
+    function renderStyleUI(){
+      const sel = $('#styleSel');
+      sel.innerHTML = App.styleList.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+      sel.value = App.cfg.style;
+      $('#styleDesc').textContent = App.styleList.find(s=>s.id===App.cfg.style)?.desc || '';
+      const gal = $('#styleGallery'); gal.innerHTML='';
+      App.styleList.forEach(s=>{
+        const col = document.createElement('div'); col.className='col-12'; col.role='listitem';
+        col.innerHTML = `
+          <button type="button" class="style-card p-2 d-flex align-items-center w-100 ${App.cfg.style===s.id?'active':''}" data-style="${s.id}" aria-pressed="${App.cfg.style===s.id}">
+            <div class="ic me-2"><i class="fa-solid ${s.icon}" aria-hidden="true"></i></div>
+            <div class="text-start">
+              <div class="fw-semibold">${s.name}</div>
+              <div class="small-muted">${s.desc}</div>
+            </div>
+          </button>`;
+        gal.appendChild(col);
+      });
+    }
+
+    /* ========== Script loader & WebGL ========== */
+    function loadScriptOnce(src){
+      return new Promise((resolve, reject)=>{
+        if ([...document.scripts].some(s => s.src === src)) return resolve(true);
+        const s = document.createElement('script');
+        s.src = src; s.async = true; s.crossOrigin = 'anonymous';
+        s.onload = () => resolve(true);
+        s.onerror = () => reject(new Error('โหลดไม่สำเร็จ: '+src));
+        document.head.appendChild(s);
+      });
+    }
+    async function tryScripts(list){ for(const u of list){ try{ await loadScriptOnce(u); return {ok:true, url:u}; }catch(e){ console.warn(e); } } return {ok:false}; }
+    function webglOK(){ try{ const c=document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl')||c.getContext('experimental-webgl')));}catch(e){return false;} }
+    function showCdnError(lib){
+      const fb = document.querySelector('#viewport .fallback');
+      if(!fb) return;
+      fb.innerHTML = `
+        <div class="text-center">
+          <div class="mb-2"><i class="fa-solid fa-circle-xmark fa-2xl" aria-hidden="true"></i></div>
+          <div>โหลดไลบรารี <b>${lib}</b> ไม่สำเร็จ</div>
+          <div class="small-muted">ระบบได้ลองหลาย CDN แล้ว — วางไฟล์สำรองที่ <code>./assets/vendor/three/</code></div>
+        </div>`;
+    }
+    async function ensureThree(){
+      if (!webglOK()){
+        const fb = document.querySelector('#viewport .fallback');
+        if (fb) fb.innerHTML = `
+          <div class="text-center">
+            <div class="mb-2"><i class="fa-solid fa-triangle-exclamation fa-2xl" aria-hidden="true"></i></div>
+            <div>เครื่องนี้ไม่รองรับ WebGL หรือถูกปิดใช้งาน</div>
+            <div class="small-muted mt-1">เปิด Hardware Acceleration / อัปเดตไดรเวอร์ / ใช้ Chrome/Edge เวอร์ชันล่าสุด</div>
+          </div>`;
+        return false;
+      }
+      const threeList = [
+        'https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js',
+        'https://unpkg.com/three@0.158.0/build/three.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.158.0/three.min.js',
+        './assets/vendor/three/three.min.js'
+      ];
+      const orbitList = [
+        'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/OrbitControls.js',
+        'https://unpkg.com/three@0.158.0/examples/js/controls/OrbitControls.js',
+        './assets/vendor/three/OrbitControls.js'
+      ];
+      if (window.THREE && THREE.OrbitControls) return (App.threeReady=true);
+      const ok1 = await tryScripts(threeList); if(!ok1.ok){ showCdnError('Three.js'); return false; }
+      const ok2 = await tryScripts(orbitList); if(!ok2.ok){ showCdnError('OrbitControls'); return false; }
+      return (App.threeReady = !!(window.THREE && THREE.OrbitControls));
+    }
+
+    /* ========== 3D Preview ========== */
+    function init3D(){
+      if(!App.threeReady){ $('#viewport .fallback')?.classList.remove('d-none'); return; }
+      const vp = $('#viewport'); vp.innerHTML = '';
+      const renderer = new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+      renderer.setSize(vp.clientWidth, vp.clientHeight);
+      renderer.setPixelRatio(window.devicePixelRatio||1);
+      vp.appendChild(renderer.domElement);
+
+      const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b1020);
+      const camera = new THREE.PerspectiveCamera(45, vp.clientWidth/vp.clientHeight, 0.1, 1000); camera.position.set(6, 6, 10);
+      const controls = new THREE.OrbitControls(camera, renderer.domElement); controls.enableDamping = true;
+
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x223344, 1.1));
+      const dir = new THREE.DirectionalLight(0xffffff, .8); dir.position.set(5,8,5); scene.add(dir);
+
+      const gnd = new THREE.Mesh(new THREE.PlaneGeometry(40,40), new THREE.MeshStandardMaterial({color:0x111827, roughness:.9, metalness:0}));
+      gnd.rotation.x = -Math.PI/2; scene.add(gnd);
+
+      const {mesh,roof} = buildHouseMeshes(); scene.add(mesh); if(roof) scene.add(roof);
+
+      App.scene=scene; App.renderer=renderer; App.camera=camera; App.controls=controls; App.mesh=mesh; App.roof=roof;
+
+      const onResize = ()=>{ const W = vp.clientWidth, H = vp.clientHeight; renderer.setSize(W,H); camera.aspect=W/H; camera.updateProjectionMatrix(); };
+      window.addEventListener('resize', debounce(onResize, 120));
+
+      (function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera); })();
+    }
+    function buildHouseMeshes(){
+      const w = App.cfg.plotW/2, l = App.cfg.plotL/2, h = App.cfg.floors * App.cfg.floorH * 0.6;
+      const color = new THREE.Color(App.cfg.color || '#e0e7ff');
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, l), new THREE.MeshStandardMaterial({color, roughness:.55}));
+      mesh.position.y = h/2; mesh.rotation.y = Math.PI/12;
+      const roof = buildRoofMesh(w,l,h);
+      return {mesh, roof};
+    }
+    function buildRoofMesh(w,l,h){
+      const t = (type)=>App.cfg.roofType===type;
+      const roofY = h + 0.05; let mesh=null;
+      if (t('flat')){
+        const geom = new THREE.BoxGeometry(w*1.02, 0.08*h, l*1.02);
+        mesh = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({color:0x334155, roughness:.8, metalness:.1}));
+        mesh.position.y = roofY + (0.08*h)/2;
+      } else if (t('shed')){
+        const geom = new THREE.BoxGeometry(w*1.05, 0.12*h, l*1.05);
+        mesh = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({color:0x334155, roughness:.8}));
+        mesh.position.y = roofY + (0.12*h)/2; mesh.rotation.x = -Math.PI/16;
+      } else if (t('gable')){
+        const geom = new THREE.ConeGeometry(Math.max(w,l)*0.70, Math.max(w,l)*0.35, 4);
+        mesh = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({color:0x334155, roughness:.85, metalness:.05}));
+        mesh.position.y = roofY + geom.parameters.height/2 - .02; mesh.rotation.y = Math.PI/4; mesh.scale.set(1.2, 1, 0.8);
+      } else { // hip
+        const geom = new THREE.ConeGeometry(Math.max(w,l)*0.65, Math.max(w,l)*0.35, 4);
+        mesh = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({color:0x334155, roughness:.85, metalness:.05}));
+        mesh.position.y = roofY + geom.parameters.height/2 - .02; mesh.rotation.y = Math.PI/4;
+      }
+      return mesh;
+    }
+    function update3D(){
+      if(!App.mesh || !App.scene) return;
+      const w = App.cfg.plotW/2, l = App.cfg.plotL/2, h = App.cfg.floors * App.cfg.floorH * 0.6;
+      App.mesh.material.color = new THREE.Color(App.cfg.color || '#e0e7ff');
+      App.mesh.geometry.dispose(); App.mesh.geometry = new THREE.BoxGeometry(w, h, l);
+      App.mesh.position.y = h/2;
+      if (App.roof){
+        App.scene.remove(App.roof);
+        App.roof.geometry.dispose(); App.roof.material.dispose();
+        App.roof = null;
+      }
+      App.roof = buildRoofMesh(w,l,h);
+      if (App.roof) App.scene.add(App.roof);
+    }
+
+    /* ========== 2D Plan (SVG) ========== */
+    function drawPlan(){
+      const svg = $('#planSVG'); svg.innerHTML = '';
+      const W = +svg.getAttribute('width') || 794; const H = +svg.getAttribute('height') || 340; const pad = 20;
+      const maxW = (W - pad*2), maxH = (H - pad*2);
+      const sX = maxW / App.cfg.plotW; const sY = maxH / App.cfg.plotL; const s = Math.min(sX, sY);
+      const plotWpx = App.cfg.plotW * s, plotLpx = App.cfg.plotL * s; const offsetX = (W - plotWpx)/2, offsetY = (H - plotLpx)/2;
+
+      const ns = 'http://www.w3.org/2000/svg';
+      const rect = (x,y,w,h,cls,rx=8)=>{ const r=document.createElementNS(ns,'rect'); r.setAttribute('x',x); r.setAttribute('y',y); r.setAttribute('width',w); r.setAttribute('height',h); r.setAttribute('rx',rx); r.setAttribute('class',cls); svg.appendChild(r); return r; };
+      const text = (x,y,t,cls)=>{ const tt=document.createElementNS(ns,'text'); tt.setAttribute('x',x); tt.setAttribute('y',y); tt.setAttribute('class',cls); tt.textContent=t; svg.appendChild(tt); return tt; };
+
+      const style = document.createElementNS(ns,'style');
+      style.textContent = `
+        .plot{fill:#fff;stroke:#CBD5E1;stroke-width:2;}
+        .rm{fill:#F1F5F9;stroke:#CBD5E1;}
+        .lab{font:12px Kanit, sans-serif; fill:#334155}
+        .dim{font:11px Kanit, sans-serif; fill:#64748b}
+      `; svg.appendChild(style);
+
+      rect(offsetX, offsetY, plotWpx, plotLpx, 'plot');
+      text(pad, 16, \`แปลง \${App.cfg.plotW}x\${App.cfg.plotL} ม.\`, 'dim');
+
+      const cols = 2; const rows = App.cfg.floors + 1;
+      const gW = (plotWpx - 12)/cols; const gH = (plotLpx - 12)/rows;
+      const rooms = ['โถงรับแขก','ครัว','ห้องนอน','ห้องน้ำ','ห้องทำงาน','ระเบียง','ห้องพระ','เก็บของ'];
+      let idx=0;
+      for(let r=0;r<rows;r++){
+        for(let c=0;c<cols;c++){
+          const x = offsetX + 6 + c*gW; const y = offsetY + 6 + r*gH;
+          rect(x,y,gW-6,gH-6,'rm',6);
+          text(x+10,y+22, rooms[(idx++)%rooms.length], 'lab');
+        }
+      }
+    }
+
+    /* ========== BOQ (rough estimate) ========== */
+    function buildBOQ(){
+      const tbody = $('#boqTable tbody'); tbody.innerHTML = '';
+      const area = Math.max(1, (App.cfg.plotW * App.cfg.plotL * 0.6) * App.cfg.floors); // 60% footprint per floor
+      $('#areaDisplay').textContent = fmtTH.format(Math.round(area));
+
+      const rate = { foundation: 2200, structure: 2800, wall: 950, roof: 1200, floor: 800, mep: 1500 };
+      let adj = 1.0; if(App.cfg.floodRisk) adj += 0.08; if(App.cfg.softSoil) adj += 0.12;
+
+      const items = [
+        { name:'งานฐานราก/เสาเข็ม', qty:area, unit:'ตร.ม.', price:rate.foundation*adj },
+        { name:'งานโครงสร้าง',      qty:area, unit:'ตร.ม.', price:rate.structure*adj  },
+        { name:'งานผนัง/ฉาบ/สี',     qty:area*0.9, unit:'ตร.ม.', price:rate.wall },
+        { name:'งานหลังคา',          qty:area*0.5, unit:'ตร.ม.', price:rate.roof },
+        { name:'งานพื้น/บันได',       qty:area, unit:'ตร.ม.', price:rate.floor },
+        { name:'งานระบบ MEP',        qty:area, unit:'ตร.ม.', price:rate.mep*adj }
+      ];
+      if(App.cfg.roofType==='flat') items[3].price *= 0.95;
+      if(App.cfg.roofType==='hip')  items[3].price *= 1.08;
+
+      let sumMat = 0; let i=1;
+      for(const it of items){
+        const total = it.qty * it.price; sumMat += total;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${i++}</td>
+          <td>${it.name}</td>
+          <td class="text-end">${fmtTH.format(Math.round(it.qty))}</td>
+          <td>${it.unit}</td>
+          <td class="text-end">${THB(Math.round(it.price))}</td>
+          <td class="text-end">${THB(Math.round(total))}</td>`;
+        tbody.appendChild(tr);
+      }
+
+      const OH = Math.round(sumMat * 0.30);
+      const ALL = sumMat + OH;
+      $('#sumMat').textContent = THB(Math.round(sumMat));
+      $('#sumOH').textContent  = THB(OH);
+      $('#sumAll').textContent = THB(Math.round(ALL));
+      return {area, sumMat, OH, ALL};
+    }
+
+    /* ========== Best-fit helper ========== */
+    function bestFit(){
+      const goal = Math.max(20, parseFloat($('#goalArea').value)||180);
+      const budget = Math.max(0, parseFloat($('#budgetMax').value)||2500000);
+      const est = buildBOQ();
+      const costPerSq = est.ALL / est.area;
+      const targetCost = costPerSq * goal;
+      let floors = goal>220?3: goal>140?2:1;
+      let style = (budget/goal) > 15000 ? 'modern' : 'tropical';
+      if((budget/goal) > 18000) style = 'nordic';
+      const msg = `คาดการณ์งบ ~ ${THB(Math.round(targetCost))} | เหมาะกับ ${floors} ชั้น | สไตล์ ${App.styleList.find(s=>s.id===style)?.name || style}`;
+      $('#bestResult').textContent = msg;
+      App.cfg.floors = floors; App.cfg.style = style;
+      applyConfigToForm(App.cfg); renderStyleUI(); rebuildAll();
+    }
+
+    /* ========== AI integration (backend stub) ========== */
+    async function callAI(promptText){
+      try{
+        const resp = await fetch('./api/ai_design.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:promptText})});
+        if(!resp.ok) return { ok:false, error:`HTTP ${resp.status}` };
+        const json = await resp.json(); return (json && typeof json==='object') ? json : { ok:false, error:'Bad JSON' };
+      }catch(e){ return { ok:false, error:String(e) }; }
+    }
+
+    /* ========== Export helpers ========== */
+    function download(filename, blob){
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a); a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 100);
+    }
+    function exportPlanPNG(){
+      const svg = $('#planSVG');
+      const xml = new XMLSerializer().serializeToString(svg);
+      const svgBlob = new Blob([xml], {type:'image/svg+xml;charset=utf-8'});
+      const url = URL.createObjectURL(svgBlob);
+      const img = new Image();
+      img.onload = function(){
+        const canvas = document.createElement('canvas');
+        canvas.width = svg.width.baseVal.value; canvas.height = svg.height.baseVal.value;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img,0,0);
+        canvas.toBlob(b=> download(`plan_${Date.now()}.png`, b), 'image/png');
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    }
+    function exportBoqCSV(){
+      const rows = [['#','งาน','ปริมาณ','หน่วย','ราคา/หน่วย','รวม']];
+      $$('#boqTable tbody tr').forEach(tr=>{
+        const cols = Array.from(tr.children).map(td=> td.textContent.replace(/[\u0E00-\u0E7F,฿]/g, s=> s==='฿'?'':'') );
+        rows.push(cols);
+      });
+      const foot = [
+        ['','','','','รวมค่าวัสดุ', $('#sumMat').textContent],
+        ['','','','','+ OH (30%)',  $('#sumOH').textContent ],
+        ['','','','','รวมทั้งหมด',  $('#sumAll').textContent ],
+      ];
+      foot.forEach(r=>rows.push(r));
+      const csv = rows.map(r=> r.map(x=>{
+        const t = (x??'').toString().trim().replaceAll('"','""');
+        return `"${t}"`;
+      }).join(',')).join('\r\n');
+      download(`boq_${Date.now()}.csv`, new Blob([csv], {type:'text/csv;charset=utf-8'}));
+    }
+    function exportViewportImage(){
+      if(!App.renderer) return;
+      App.renderer.render(App.scene, App.camera);
+      App.renderer.domElement.toBlob(b=> download(`preview_${Date.now()}.png`, b), 'image/png');
+    }
+
+    /* ========== Rebuild pipeline ========== */
+    function rebuildAll(){ readForm(); autosave(); drawPlan(); buildBOQ(); if(App.threeReady) update3D(); }
+    const debouncedRebuild = debounce(rebuildAll, 80);
+
+    /* ========== Boot ========== */
+    document.addEventListener('DOMContentLoaded', async ()=>{
+      await includePartials();
+      const saved = autoload(); if(saved) Object.assign(App.cfg, saved);
+      renderStyleUI(); applyConfigToForm(App.cfg);
+
+      // Inputs
+      $('#inputGrid').addEventListener('input', debouncedRebuild);
+      $('#colorMain').addEventListener('change', debouncedRebuild);
+      $('#roofType').addEventListener('change', debouncedRebuild);
+
+      // Actions
+      $('#saveCfg').addEventListener('click', ()=>{ autosave(); const b=$('#saveCfg'); const prev=b.innerHTML; b.innerHTML='<i class="fa-solid fa-check me-1" aria-hidden="true"></i>บันทึกแล้ว'; setTimeout(()=>b.innerHTML=prev, 1200); });
+      $('#resetCfg').addEventListener('click', ()=>{ localStorage.removeItem(AUTOKEY); location.reload(); });
+      $('#loadLast').addEventListener('click', ()=>{ const s=autoload(); if(s){ Object.assign(App.cfg,s); applyConfigToForm(App.cfg); rebuildAll(); }});
+
+      $('#bestBtn').addEventListener('click', bestFit);
+
+      $('#aiBtn').addEventListener('click', async ()=>{
+        const btn = $('#aiBtn'); const txt = $('#aiPrompt').value.trim(); if(!txt) return;
+        const prev = btn.innerHTML; btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>กำลังสร้าง…';
+        const res = await callAI(txt);
+        if(res?.ok && res.data){ Object.assign(App.cfg, res.data); applyConfigToForm(App.cfg); rebuildAll(); }
+        else { alert('AI Error: '+ (res?.error || 'unknown')); }
+        btn.disabled=false; btn.innerHTML=prev;
+      });
+
+      // Style selector
+      $('#styleGallery').addEventListener('click', e=>{
+        const card = e.target.closest('.style-card'); if(!card) return;
+        App.cfg.style = card.getAttribute('data-style');
+        $$('.style-card').forEach(x=>{ x.classList.toggle('active', x===card); x.setAttribute('aria-pressed', x===card?'true':'false'); });
+        $('#styleSel').value = App.cfg.style;
+        $('#styleDesc').textContent = App.styleList.find(s=>s.id===App.cfg.style)?.desc || '';
+        rebuildAll();
+      });
+      $('#styleSel').addEventListener('change', ()=>{
+        App.cfg.style = $('#styleSel').value; renderStyleUI(); rebuildAll();
+      });
+
+      // Keyboard R to rebuild
+      document.addEventListener('keydown', (e)=>{ if(e.key==='r' || e.key==='R'){ rebuildAll(); }});
+
+      // Exports
+      $('#dlPlanPng').addEventListener('click', exportPlanPNG);
+      $('#dlBoqCsv').addEventListener('click', exportBoqCSV);
+      $('#dlImage').addEventListener('click', exportViewportImage);
+
+      // Three.js
+      const ok = await ensureThree(); if(ok) init3D();
+      rebuildAll();
+    });
+
+    /* Local fallback notes:
+       ./assets/vendor/three/three.min.js
+       ./assets/vendor/three/OrbitControls.js  (ควรเป็น release เดียวกัน r158)
+    */
+  })();
+  </script>
+</body>
+</html>

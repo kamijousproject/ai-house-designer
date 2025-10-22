@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ผู้รับเหมา — AI House Designer</title>
+  <head>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="./assets/css/app.css" rel="stylesheet">
+
+</head>
+</head>
+<body data-page="contractors">
+<header data-include></header>
+
+<div class="container py-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label">จังหวัด</label>
+      <input class="form-control" id="searchProvince" placeholder="เช่น เชียงใหม่">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">อำเภอ/เขต</label>
+      <input class="form-control" id="searchAmphoe" placeholder="เช่น เมืองเชียงใหม่">
+    </div>
+    <div class="col-md-4">
+      <button id="btnFindContractor" class="btn btn-brand text-white w-100 pill"><i class="fa-solid fa-magnifying-glass-location me-2"></i>ค้นหาผู้รับเหมา</button>
+    </div>
+  </div>
+  <div class="small-muted mt-2">ระบบจะเปิดค้นหา Google ด้วยคีย์เวิร์ด + พื้นที่ที่กำหนด</div>
+  <div class="card mt-3"><div class="card-body">
+    <h6 class="mb-1">เช็คลิสต์คัดเลือกผู้รับเหมา</h6>
+    <ul class="mb-0">
+      <li>ผลงานที่ผ่านมา & รีวิวลูกค้า</li>
+      <li>มีสัญญามาตรฐาน แยกรายการวัสดุ/งวดงานชัดเจน</li>
+      <li>รับประกันผลงานและโครงสร้างตามสมควร</li>
+    </ul>
+  </div></div>
+</div>
+
+
+<footer data-include></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module" src="./assets/js/app.js"></script>
+</body>
+</html>
+

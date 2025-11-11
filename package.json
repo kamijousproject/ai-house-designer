@@ -10,10 +10,10 @@
   },
   "dependencies": {
     "next": "^14.0.0",
+    "openai": "^4.104.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "three": "^0.159.0",
-    "openai": "^4.20.0"
+    "three": "^0.159.0"
   },
   "devDependencies": {
     "eslint": "^8.54.0",

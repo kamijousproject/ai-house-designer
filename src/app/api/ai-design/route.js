@@ -5,7 +5,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
-const OPENAI_MODEL = 'gpt-4o-mini'
+const OPENAI_MODEL = 'gpt-4o-mini' // or 'gpt-3.5-turbo' for cheaper option
 
 const schema = {
   type: 'object',
@@ -40,7 +40,7 @@ const schema = {
     },
     rationale: { type: 'string' },
   },
-  required: ['plotW', 'plotL', 'floors', 'floorH', 'roofType', 'color', 'floodRisk', 'softSoil', 'style']
+  required: ['plotW', 'plotL', 'floors', 'floorH', 'roofType', 'color', 'floodRisk', 'softSoil', 'style', 'rationale']
 }
 
 const systemPrompt = `คุณคือผู้ช่วยออกแบบบ้านที่ตอบกลับเป็น JSON เท่านั้น
@@ -51,7 +51,12 @@ const systemPrompt = `คุณคือผู้ช่วยออกแบบ�
 export async function POST(request) {
   try {
     // Check API key
-    if (!process.env.OPENAI_API_KEY) {
+    const apiKey = process.env.OPENAI_API_KEY
+    console.log('API Key exists:', !!apiKey)
+    console.log('API Key length:', apiKey?.length)
+    console.log('API Key starts with:', apiKey?.substring(0, 10))
+    
+    if (!apiKey) {
       return NextResponse.json(
         { ok: false, error: 'OPENAI_API_KEY not configured' },
         { status: 500 }
@@ -109,6 +114,9 @@ export async function POST(request) {
 
       } catch (error) {
         lastError = error.message
+        console.error('OpenAI API Error:', error)
+        console.error('Error status:', error.status)
+        console.error('Error message:', error.message)
         
         // Check if error is retryable
         if (error.status && [408, 429, 500, 502, 503, 504].includes(error.status)) {
@@ -124,8 +132,9 @@ export async function POST(request) {
     }
 
     // All attempts failed
+    console.error('All attempts failed. Last error:', lastError)
     return NextResponse.json(
-      { ok: false, error: lastError || 'Request failed after retries' },
+      { ok: false, error: lastError || 'Request failed after retries', details: 'Check server logs' },
       { status: 502 }
     )
 

@@ -25,8 +25,6 @@ export default function DesignerPage() {
   const [error, setError] = useState('')
   const [showResults, setShowResults] = useState(false)
   const [boqData, setBoqData] = useState([])
-  const [loadingProgress, setLoadingProgress] = useState(0)
-  const [loadingMessage, setLoadingMessage] = useState('เตรียมโหลด 3D Viewer...')
 
   // Check if manual form is filled
   useEffect(() => {
@@ -90,28 +88,6 @@ export default function DesignerPage() {
     }
   }, [showResults])
 
-  // Update 3D model when parameters change
-  useEffect(() => {
-    if (showResults && typeof window !== 'undefined') {
-      // รอให้ 3D viewer โหลดเสร็จก่อน
-      const timer = setTimeout(() => {
-        if (window.updateHouseModel) {
-          const params = {
-            plotW: parseFloat(plotW) || 12,
-            plotL: parseFloat(plotL) || 20,
-            floors: parseInt(floors) || 2,
-            floorH: parseFloat(floorH) || 3,
-            roofType: roofType || 'gable',
-            color: colorMain || '#e0e7ff'
-          }
-          window.updateHouseModel(params)
-        }
-      }, 1000) // รอ 1 วินาทีให้ scripts โหลดเสร็จ
-      
-      return () => clearTimeout(timer)
-    }
-  }, [showResults, plotW, plotL, floors, floorH, roofType, colorMain])
-
   // Calculate BOQ
   const calculateBOQ = () => {
     const area = parseFloat(plotW) * parseFloat(plotL)
@@ -138,236 +114,23 @@ export default function DesignerPage() {
     setBoqData(calculated)
   }
 
-  // Load Three.js and modules with progress tracking
-  const loadScripts = async () => {
+  // Load Three.js and modules
+  const loadScripts = () => {
     const scripts = [
-      { src: '/ai-house-designer/assets/vendor/three/three.module.js', type: 'module', name: 'Three.js Library' },
-      { src: '/ai-house-designer/assets/js/modules/state.js', type: 'module', name: 'State Manager' },
-      { src: '/ai-house-designer/assets/js/modules/styles.js', type: 'module', name: 'Style System' },
-      { src: '/ai-house-designer/assets/js/modules/compute.js', type: 'module', name: 'Compute Engine' },
-      { src: '/ai-house-designer/assets/js/modules/threeScene.js', type: 'module', name: '3D Scene' },
-      { src: '/ai-house-designer/assets/js/modules/planSvg.js', type: 'module', name: 'Plan Generator' },
+      { src: '/ai-house-designer/assets/vendor/three/three.module.js', type: 'module' },
+      { src: '/ai-house-designer/assets/js/modules/state.js', type: 'module' },
+      { src: '/ai-house-designer/assets/js/modules/styles.js', type: 'module' },
+      { src: '/ai-house-designer/assets/js/modules/compute.js', type: 'module' },
+      { src: '/ai-house-designer/assets/js/modules/threeScene.js', type: 'module' },
+      { src: '/ai-house-designer/assets/js/modules/planSvg.js', type: 'module' },
     ]
 
-    let loadedCount = 0;
-    
-    for (let i = 0; i < scripts.length; i++) {
-      const scriptConfig = scripts[i];
-      const progress = Math.round(((i + 1) / scripts.length) * 80); // 80% สำหรับโหลด scripts
-      
-      setLoadingProgress(progress);
-      setLoadingMessage(`กำลังโหลด ${scriptConfig.name}...`);
-      
-      try {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = scriptConfig.src;
-          if (scriptConfig.type) script.type = scriptConfig.type;
-          
-          script.onload = () => {
-            console.log(`✅ Script ${i + 1}/${scripts.length} loaded: ${scriptConfig.src}`);
-            
-            // ตรวจสอบว่า init3D function พร้อมใช้งานหรือไม่
-            if (scriptConfig.src.includes('threeScene.js')) {
-              console.log('🔍 Checking for init3D function:', typeof window.init3D);
-              if (typeof window.init3D === 'function') {
-                console.log('✅ init3D function is available!');
-              } else {
-                console.warn('⚠️ init3D function not found in window object');
-              }
-            }
-            
-            loadedCount++;
-            resolve();
-          };
-          
-          script.onerror = (error) => {
-            console.error(`❌ Failed to load script: ${scriptConfig.src}`, error);
-            reject(new Error(`Failed to load ${scriptConfig.name}`));
-          };
-          
-          document.body.appendChild(script);
-        });
-        
-        // หน่วงเวลาเล็กน้อยเพื่อให้เห็น progress
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-      } catch (error) {
-        console.error('Script loading error:', error);
-        setLoadingMessage(`เกิดข้อผิดพลาด: ${error.message}`);
-        return;
-      }
-    }
-    
-    // เริ่มต้น 3D viewer
-    setLoadingProgress(90);
-    setLoadingMessage('กำลังเริ่มต้น 3D Engine...');
-    
-    try {
-      await initializeThreeJS();
-    } catch (error) {
-      console.error('3D initialization error:', error);
-      setLoadingMessage(`เกิดข้อผิดพลาดในการเริ่มต้น 3D: ${error.message}`);
-    }
-  }
-  
-  // Initialize Three.js manually
-  const initializeThreeJS = async () => {
-    const viewport = document.getElementById('viewport');
-    if (!viewport) {
-      throw new Error('ไม่พบ viewport container');
-    }
-    
-    // รอให้ scripts โหลดเสร็จและ init3D function พร้อมใช้งาน
-    let retries = 0;
-    const maxRetries = 50; // รอสูงสุด 10 วินาที (50 * 200ms)
-    
-    console.log('🔍 Looking for init3D function...');
-    
-    while (retries < maxRetries) {
-      console.log(`Attempt ${retries + 1}: window.init3D type =`, typeof window.init3D);
-      
-      if (typeof window.init3D === 'function') {
-        console.log('✅ Found init3D function!');
-        break;
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 200));
-      retries++;
-      
-      if (retries % 5 === 0) {
-        setLoadingMessage(`รอ 3D Engine... (${Math.round(retries * 200 / 1000)}s)`);
-        console.log(`Still waiting for init3D... ${retries * 200 / 1000}s`);
-      }
-    }
-    
-    if (typeof window.init3D !== 'function') {
-      console.error('❌ init3D function not found after', retries, 'attempts');
-      console.log('Available window properties:', Object.keys(window).filter(key => key.includes('init') || key.includes('3D') || key.includes('three')));
-      
-      // ลองใช้ standalone version
-      console.log('🔄 Trying standalone 3D viewer...');
-      try {
-        // โหลด standalone version
-        const standalonScript = document.createElement('script');
-        standalonScript.src = '/ai-house-designer/assets/js/modules/threeScene-standalone.js';
-        document.body.appendChild(standalonScript);
-        
-        // รอให้ standalone script โหลด
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        if (typeof window.init3DStandalone === 'function') {
-          console.log('✅ Standalone script loaded, using init3DStandalone');
-          window.init3D = window.init3DStandalone;
-        } else {
-          throw new Error('Standalone script failed to load');
-        }
-      } catch (fallbackError) {
-        console.error('❌ Standalone script loading also failed:', fallbackError);
-        
-        // สร้าง simple 3D placeholder แทน
-        console.log('🎨 Creating simple 3D placeholder...');
-        createSimple3DPlaceholder(viewport);
-        return;
-      }
-    }
-    
-    try {
-      setLoadingProgress(95);
-      setLoadingMessage('กำลังสร้าง 3D Scene...');
-      
-      const viewer3D = await window.init3D(viewport, {
-        background: 0x0b1020
-      });
-      
-      // สร้างโมเดลเริ่มต้น
-      const defaultParams = {
-        plotW: parseFloat(plotW) || 12,
-        plotL: parseFloat(plotL) || 20,
-        floors: parseInt(floors) || 2,
-        floorH: parseFloat(floorH) || 3,
-        roofType: roofType || 'gable',
-        color: colorMain || '#e0e7ff'
-      };
-      
-      viewer3D.build(defaultParams);
-      
-      // เก็บ reference
-      window.viewer3D = viewer3D;
-      window.updateHouseModel = (params) => {
-        viewer3D.build(params);
-      };
-      
-      setLoadingProgress(100);
-      setLoadingMessage('เสร็จสิ้น!');
-      
-      // ซ่อน loading หลังจาก 1 วินาที
-      setTimeout(() => {
-        setLoadingProgress(0);
-      }, 1000);
-      
-      console.log('🎉 3D Viewer พร้อมใช้งาน');
-      
-    } catch (error) {
-      throw new Error(`ไม่สามารถเริ่มต้น 3D Scene ได้: ${error.message}`);
-    }
-  }
-  
-  // Create simple 3D placeholder when Three.js fails to load
-  const createSimple3DPlaceholder = (viewport) => {
-    setLoadingProgress(100);
-    setLoadingMessage('แสดง 3D แบบ 2D...');
-    
-    const params = {
-      plotW: parseFloat(plotW) || 12,
-      plotL: parseFloat(plotL) || 20,
-      floors: parseInt(floors) || 2,
-      floorH: parseFloat(floorH) || 3,
-      roofType: roofType || 'gable',
-      color: colorMain || '#e0e7ff'
-    };
-    
-    viewport.innerHTML = `
-      <div class="d-flex align-items-center justify-content-center h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-        <div class="text-center text-white">
-          <div class="mb-3">
-            <div style="
-              width: 120px; 
-              height: 80px; 
-              background: ${params.color}; 
-              border: 2px solid #333;
-              margin: 0 auto 10px;
-              position: relative;
-              transform: perspective(200px) rotateX(20deg) rotateY(-15deg);
-              box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
-            ">
-              <div style="
-                position: absolute;
-                top: -10px;
-                left: -5px;
-                right: -5px;
-                height: 8px;
-                background: #8b5e34;
-                transform: skewY(-2deg);
-              "></div>
-            </div>
-          </div>
-          <div class="small">
-            <strong>บ้าน ${params.floors} ชั้น</strong><br>
-            ${params.plotW} x ${params.plotL} ม.<br>
-            <span class="badge bg-light text-dark mt-1">${params.roofType} roof</span>
-          </div>
-          <div class="mt-2 small opacity-75">
-            💡 3D Engine ไม่พร้อมใช้งาน<br>
-            แสดงแบบ 2D แทน
-          </div>
-        </div>
-      </div>
-    `;
-    
-    setTimeout(() => {
-      setLoadingProgress(0);
-    }, 1000);
+    scripts.forEach(scriptConfig => {
+      const script = document.createElement('script')
+      script.src = scriptConfig.src
+      if (scriptConfig.type) script.type = scriptConfig.type
+      document.body.appendChild(script)
+    })
   }
 
   const sumMat = boqData.reduce((sum, item) => sum + item.total, 0)
@@ -616,35 +379,12 @@ export default function DesignerPage() {
                   <div className="card-body">
                     <h6 className="mb-2">พรีวิว 3D</h6>
                     <div id="viewport" style={{ height: '400px', background: '#f8f9fa' }}>
-                      {loadingProgress > 0 ? (
-                        <div className="d-flex align-items-center justify-content-center h-100">
-                          <div className="text-center">
-                            <div className="spinner-border text-primary mb-3" role="status">
-                              <span className="visually-hidden">Loading...</span>
-                            </div>
-                            <div className="progress mb-2" style={{ width: '250px' }}>
-                              <div 
-                                className="progress-bar" 
-                                role="progressbar" 
-                                style={{ width: `${loadingProgress}%` }}
-                                aria-valuenow={loadingProgress} 
-                                aria-valuemin="0" 
-                                aria-valuemax="100"
-                              >
-                                {loadingProgress}%
-                              </div>
-                            </div>
-                            <div className="small text-muted">{loadingMessage}</div>
-                          </div>
+                      <div className="d-flex align-items-center justify-content-center h-100">
+                        <div className="text-center">
+                          <i className="fa-solid fa-cube fa-2xl mb-2"></i>
+                          <div>กำลังโหลด 3D Viewer...</div>
                         </div>
-                      ) : (
-                        <div className="d-flex align-items-center justify-content-center h-100">
-                          <div className="text-center">
-                            <i className="fa-solid fa-cube fa-2xl mb-2"></i>
-                            <div>กำลังโหลด 3D Viewer...</div>
-                          </div>
-                        </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>

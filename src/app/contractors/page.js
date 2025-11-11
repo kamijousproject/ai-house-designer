@@ -12,7 +12,7 @@ export default function ContractorsPage() {
         <div className="card">
           <div className="card-body">
             <h3 className="mb-4">
-              <i className="fa-solid fa-user-helmet-safety me-2"></i>
+              <i className="fa-solid fa-hard-hat me-2"></i>
               ค้นหาและคัดเลือกผู้รับเหมา
             </h3>
 

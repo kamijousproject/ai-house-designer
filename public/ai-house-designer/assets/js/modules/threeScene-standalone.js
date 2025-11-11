@@ -1,9 +1,27 @@
-// /assets/js/threeScene.js
-// ใช้คู่กับ import map ใน designer.html ที่ชี้ไป three.module.js และ OrbitControls.js (ไฟล์ local)
-// โครงสร้างโมดูล: export ฟังก์ชัน init3D(container, opts?) -> คืน { build, dispose, scene, camera, renderer }
+// threeScene-standalone.js - เวอร์ชันที่ไม่ใช้ ES6 imports
+// ใช้สำหรับ fallback เมื่อ module loading ล้มเหลว
 
-import * as THREE from '/ai-house-designer/assets/vendor/three/three.module.js';
-import { OrbitControls } from '/ai-house-designer/assets/vendor/three/OrbitControls.module.js';
+// รอให้ Three.js โหลดเสร็จ
+function waitForThreeJS() {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    const maxAttempts = 50;
+    
+    const checkThree = () => {
+      if (typeof THREE !== 'undefined') {
+        console.log('✅ THREE.js is available');
+        resolve();
+      } else if (attempts >= maxAttempts) {
+        reject(new Error('THREE.js not loaded'));
+      } else {
+        attempts++;
+        setTimeout(checkThree, 100);
+      }
+    };
+    
+    checkThree();
+  });
+}
 
 /** คำนวณขนาดตัวบ้านจากขนาดที่ดินแบบง่ายๆ */
 function baseDims(plotW, plotL) {
@@ -46,19 +64,22 @@ function fitCameraToObject(object, camera, controls) {
 }
 
 /**
- * สร้าง viewer 3D
- * @param {HTMLElement} container - div ที่จะใส่ canvas
- * @param {Object} opts - ตัวเลือกเพิ่มเติม (เช่น background)
- * @returns {Promise<{build: Function, dispose: Function, scene: THREE.Scene, camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer}>}
+ * สร้าง viewer 3D (standalone version)
  */
-export async function init3D(container, opts = {}) {
+async function init3DStandalone(container, opts = {}) {
+  console.log('🔧 Starting standalone 3D initialization...');
+  
+  // รอให้ THREE.js โหลดเสร็จ
+  await waitForThreeJS();
+  
   if (!container) throw new Error('threeScene: container ไม่ถูกต้อง');
 
   // --- Renderer ---
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio || 1);
   renderer.setSize(container.clientWidth || 640, container.clientHeight || 480, false);
-  // color/tone mapping (รองรับ r158)
+  
+  // color/tone mapping
   if (THREE.SRGBColorSpace) renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.1;
@@ -79,7 +100,8 @@ export async function init3D(container, opts = {}) {
   );
   camera.position.set(30, 22, 28);
 
-  const controls = new OrbitControls(camera, renderer.domElement);
+  // ใช้ OrbitControls จาก global THREE object
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
 
   // --- Lights ---
@@ -107,6 +129,7 @@ export async function init3D(container, opts = {}) {
     controls.update();
     renderer.render(scene, camera);
   };
+  
   if (renderer.setAnimationLoop) {
     renderer.setAnimationLoop(render);
   } else {
@@ -129,7 +152,7 @@ export async function init3D(container, opts = {}) {
   const ro = new ResizeObserver(onResize);
   ro.observe(container);
 
-  // --- Material cache (ลดการสร้างซ้ำ) ---
+  // --- Material cache ---
   const mats = {
     slab: new THREE.MeshStandardMaterial({ color: 0x334155 }),
     plot: new THREE.MeshStandardMaterial({ color: 0x132034, side: THREE.DoubleSide }),
@@ -145,14 +168,14 @@ export async function init3D(container, opts = {}) {
       plotL = 20,
       floors = 2,
       floorH = 3,
-      roofType = 'gable', // 'flat' | 'shed' | 'hip' | 'gable'
+      roofType = 'gable',
       color = '#e0e7ff',
     } = params;
 
     // เคลียร์ของเก่า
     clearObject3D(root);
 
-    // ปรับ/สร้างแปลงที่ดิน (เก็บไว้ reuse material)
+    // ปรับ/สร้างแปลงที่ดิน
     if (!plotMesh) {
       plotMesh = new THREE.Mesh(
         new THREE.PlaneGeometry(plotW, plotL),
@@ -169,7 +192,7 @@ export async function init3D(container, opts = {}) {
     const { bldW, bldL } = baseDims(plotW, plotL);
     const H = Math.max(2.6, floors * floorH);
 
-    // ฐานคอนกรีต (slab)
+    // ฐานคอนกรีต
     {
       const geo = new THREE.BoxGeometry(bldW, 0.3, bldL);
       const mesh = new THREE.Mesh(geo, mats.slab);
@@ -177,7 +200,7 @@ export async function init3D(container, opts = {}) {
       root.add(mesh);
     }
 
-    // ตัวอาคาร (body)
+    // ตัวอาคาร
     {
       const geo = new THREE.BoxGeometry(bldW, H, bldL);
       const mat = new THREE.MeshStandardMaterial({
@@ -190,13 +213,13 @@ export async function init3D(container, opts = {}) {
       root.add(mesh);
     }
 
-    // หน้าต่าง (ตัวอย่างวางรอบๆ)
+    // หน้าต่าง
     {
       const winW = 1.2, winH = 1.0, winT = 0.08;
       for (let i = 0; i < 6; i++) {
         const geo = new THREE.BoxGeometry(winW, winH, winT);
         const win = new THREE.Mesh(geo, mats.glass);
-        const side = (i % 2 === 0) ? 1 : -1; // ซ้าย/ขวา
+        const side = (i % 2 === 0) ? 1 : -1;
         const posX = side * (bldW / 2 - 0.06);
         const posZ = (i < 3 ? -1 : 1) * ((i % 3) * (bldL / 3) - bldL / 3 + bldL / 6);
         win.position.set(posX, H / 2, posZ);
@@ -215,7 +238,6 @@ export async function init3D(container, opts = {}) {
         flat.position.y = H + 0.45;
         roofG.add(flat);
       } else {
-        // ใช้กรวยสี่เหลี่ยม (ฐานสี่เหลี่ยม) จำลองจั่ว/ปั้นหยา/เพิง
         const ridgeH = (roofType === 'shed') ? 1.0 : 1.6;
         const r = Math.max(bldW, bldL) * 0.75;
         const cone = new THREE.Mesh(
@@ -224,7 +246,6 @@ export async function init3D(container, opts = {}) {
         );
         cone.rotation.y = Math.PI / 4;
         cone.position.y = H + 0.3 + ridgeH / 2;
-        // ปรับเอียงเล็กน้อยสำหรับ shed
         if (roofType === 'shed') cone.rotation.x = Math.PI / 14;
         roofG.add(cone);
       }
@@ -236,21 +257,16 @@ export async function init3D(container, opts = {}) {
     fitCameraToObject(root, camera, controls);
   }
 
-  /** ทำความสะอาดทั้งหมดเมื่อเลิกใช้ */
+  /** ทำความสะอาด */
   function dispose() {
     disposed = true;
     ro.disconnect();
     if (renderer.setAnimationLoop) renderer.setAnimationLoop(null);
-
     clearObject3D(root);
     clearObject3D(scene);
-
-    // dispose lights/helpers
     grid.geometry?.dispose?.();
     if (Array.isArray(grid.material)) grid.material.forEach((m) => m?.dispose?.());
     else grid.material?.dispose?.();
-
-    // dispose plot
     if (plotMesh) {
       plotMesh.geometry?.dispose?.();
       if (Array.isArray(plotMesh.material)) plotMesh.material.forEach((m) => m?.dispose?.());
@@ -258,26 +274,20 @@ export async function init3D(container, opts = {}) {
       scene.remove(plotMesh);
       plotMesh = null;
     }
-
-    // dispose cached materials
     Object.values(mats).forEach((m) => m?.dispose?.());
-
     controls.dispose();
     renderer.dispose();
-    // เอา canvas ออก (ถ้าต้องการ)
-    // container.removeChild(renderer.domElement);
   }
 
-  // เริ่มต้นด้วยโมเดลค่าเริ่มต้น เพื่อให้มีอะไรแสดง
+  // เริ่มต้นด้วยโมเดลค่าเริ่มต้น
   build();
 
+  console.log('✅ Standalone 3D viewer initialized');
   return { build, dispose, scene, camera, renderer };
 }
 
-// Export to window for external access
+// Export to window
 if (typeof window !== 'undefined') {
-  window.init3D = init3D;
-  console.log('🎯 init3D function exported to window:', typeof window.init3D);
-} else {
-  console.warn('⚠️ window object not available for init3D export');
+  window.init3DStandalone = init3DStandalone;
+  console.log('🎯 init3DStandalone function exported to window');
 }

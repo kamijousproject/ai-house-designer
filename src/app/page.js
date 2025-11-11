@@ -90,7 +90,7 @@ export default function Home() {
           </div>
           <div className="col-md-6 col-lg-4">
             <a href="/ai-house-designer/contractors" className="feature-card">
-              <div className="icon-wrap"><i className="fa-solid fa-user-helmet-safety" aria-hidden="true"></i></div>
+              <div className="icon-wrap"><i className="fa-solid fa-hard-hat" aria-hidden="true"></i></div>
               <h5 className="mb-1">ค้นหาผู้รับเหมา</h5>
               <p className="mb-0 small-muted">ลิงก์ค้นหาในพื้นที่ พร้อมเช็คลิสต์คัดเลือกผู้รับเหมา</p>
             </a>

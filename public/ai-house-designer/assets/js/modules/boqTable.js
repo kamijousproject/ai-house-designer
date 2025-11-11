@@ -43,6 +43,39 @@ export function buildBOQ(tbody, footerEls, cfg){
   tbody.addEventListener('input',recalc); recalc();
   return { usable };
 }
+export function buildBOQFromRows(tbody, footerEls, items){
+  const rows = (items||[]).map((r)=>({
+    name: String(r.name||'รายการ'),
+    qty: Math.max(0, Number(r.qty||0)),
+    unit: String(r.unit||''),
+    rate: Math.max(0, Number(r.rate||0)),
+  }));
+  tbody.innerHTML='';
+  rows.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${i+1}</td>
+      <td>${r.name}</td>
+      <td class="text-end">${r.qty.toFixed(2)}</td>
+      <td>${r.unit}</td>
+      <td class="text-end"><input type="number" class="form-control form-control-sm text-end rate" value="${r.rate}" min="0" /></td>
+      <td class="text-end total">0</td>`;
+    tbody.appendChild(tr);
+  });
+  const recalc=()=>{
+    let sum=0;
+    [...tbody.querySelectorAll('tr')].forEach((tr,idx)=>{
+      const qty=rows[idx].qty, rate=parseFloat(tr.querySelector('.rate').value||0), total=qty*rate;
+      tr.querySelector('.total').textContent = niceInt(Math.round(total)); sum+=total;
+    });
+    const over=sum*0.30;
+    footerEls.sumMat.textContent=niceInt(Math.round(sum));
+    footerEls.sumOH.textContent=niceInt(Math.round(over));
+    footerEls.sumAll.textContent=niceInt(Math.round(sum+over));
+  };
+  tbody.addEventListener('input',recalc); recalc();
+  return { count: rows.length };
+}
 export function downloadCSV(table){
   const rows = [['ลำดับ','งาน','ปริมาณ','หน่วย','ราคาต่อหน่วย(บาท)','ราคารวม(บาท)']];
   table.querySelectorAll('tbody tr').forEach((tr,i)=>{
@@ -50,7 +83,7 @@ export function downloadCSV(table){
     rows.push([i+1, tds[1].textContent.trim(), tds[2].textContent.trim(), tds[3].textContent.trim(),
       tr.querySelector('.rate').value, tds[5].textContent.replace(/,/g,'')]);
   });
-  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\\n');
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'}), a=document.createElement('a');
   a.href=URL.createObjectURL(blob); a.download='boq_forward_studio.csv'; a.click();
 }

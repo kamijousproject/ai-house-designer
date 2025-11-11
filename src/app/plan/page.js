@@ -1,20 +1,97 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 
 export default function PlanPage() {
+  const planModuleRef = useRef(null)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   useEffect(() => {
-    const script = document.createElement('script')
-    script.src = '/ai-house-designer/assets/js/modules/planSvg.js'
-    script.type = 'module'
-    document.body.appendChild(script)
-
-    return () => {
-      document.body.removeChild(script)
-    }
+    let mounted = true
+    import(/* webpackIgnore: true */ '/ai-house-designer/assets/js/modules/planSvg.js')
+      .then((mod) => {
+        if (!mounted) return
+        planModuleRef.current = mod
+        handleGenPlan()
+      })
+      .catch(() => {
+        setError('โหลดโมดูลวาดแปลนไม่สำเร็จ')
+      })
+    return () => { mounted = false }
   }, [])
+
+  const getCfg = () => {
+    const plotW = Number(document.getElementById('plotW')?.value || 12)
+    const plotL = Number(document.getElementById('plotL')?.value || 20)
+    const floors = parseInt(document.getElementById('floors')?.value || '2', 10)
+    const floorH = Number(document.getElementById('floorH')?.value || 3)
+    const roofType = 'gable'
+    return { plotW, plotL, floors, floorH, roofType }
+  }
+
+  const handleGenPlan = () => {
+    const svg = document.getElementById('planSVG')
+    if (!svg || !planModuleRef.current?.drawPlan) return
+    const cfg = getCfg()
+    planModuleRef.current.drawPlan(svg, cfg)
+  }
+
+  const handleDownloadPng = () => {
+    const svg = document.getElementById('planSVG')
+    if (!svg || !planModuleRef.current?.downloadPlanPNG) return
+    planModuleRef.current.downloadPlanPNG(svg)
+  }
+
+  const handleDownloadSvg = () => {
+    const svg = document.getElementById('planSVG')
+    if (!svg) return
+    const data = new XMLSerializer().serializeToString(svg)
+    const blob = new Blob([data], { type: 'image/svg+xml' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = 'plan_forward_studio.svg'
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+  }
+
+  const handleAIGenerate = async () => {
+    if (!aiPrompt.trim()) {
+      setError('กรุณากรอกคำสั่ง AI')
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      const base = getCfg()
+      const composed = `${aiPrompt}\nข้อกำหนด: floors=${base.floors}, floorH=${base.floorH}, roofType=${base.roofType}`
+      const res = await fetch('/ai-house-designer/api/ai-design', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: composed })
+      })
+      const json = await res.json()
+      if (!res.ok || !json.ok) throw new Error(json.error || 'AI ไม่สามารถสร้างแปลนได้')
+      const d = json.data
+      // Apply AI results into inputs
+      const $plotW = document.getElementById('plotW')
+      const $plotL = document.getElementById('plotL')
+      const $floors = document.getElementById('floors')
+      const $floorH = document.getElementById('floorH')
+      if ($plotW) $plotW.value = d.plotW
+      if ($plotL) $plotL.value = d.plotL
+      if ($floors) $floors.value = String(d.floors)
+      if ($floorH) $floorH.value = d.floorH
+      // Draw plan with AI config
+      handleGenPlan()
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <>
@@ -26,6 +103,39 @@ export default function PlanPage() {
             <div className="card">
               <div className="card-body">
                 <h5 className="mb-3"><i className="fa-solid fa-ruler-combined me-2"></i>ตั้งค่าแปลน</h5>
+
+                {/* AI prompt */}
+                <div className="mb-3">
+                  <label className="form-label">
+                    <i className="fa-solid fa-wand-magic-sparkles me-1"></i>
+                    สร้างแปลนด้วย AI
+                  </label>
+                  <textarea
+                    className="form-control"
+                    rows={3}
+                    placeholder="เช่น บ้าน 2 ชั้น ครอบครัว 4 คน ครัวไทยแยก พื้นที่ใช้งาน ~160 ตร.ม."
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                  />
+                  <button
+                    className="btn btn-primary btn-sm mt-2 w-100"
+                    onClick={handleAIGenerate}
+                    disabled={loading || !aiPrompt.trim()}
+                  >
+                    {loading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        กำลังสร้างด้วย AI...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-wand-magic-sparkles me-1"></i>
+                        สร้างจาก AI
+                      </>
+                    )}
+                  </button>
+                  {error && <div className="alert alert-danger mt-2 mb-0 small">{error}</div>}
+                </div>
 
                 <div className="row g-2">
                   <div className="col-6">
@@ -51,13 +161,13 @@ export default function PlanPage() {
                 </div>
 
                 <div className="d-grid gap-2 mt-3">
-                  <button id="genPlan" className="btn btn-primary">
+                  <button id="genPlan" className="btn btn-primary" onClick={handleGenPlan}>
                     <i className="fa-solid fa-drafting-compass me-2"></i>สร้างแปลน
                   </button>
-                  <button id="dlPlanPng" className="btn btn-success">
+                  <button id="dlPlanPng" className="btn btn-success" onClick={handleDownloadPng}>
                     <i className="fa-solid fa-image me-2"></i>Export PNG
                   </button>
-                  <button id="dlPlanSvg" className="btn btn-info">
+                  <button id="dlPlanSvg" className="btn btn-info" onClick={handleDownloadSvg}>
                     <i className="fa-solid fa-vector-square me-2"></i>Export SVG
                   </button>
                   <button className="btn btn-secondary" onClick={() => window.print()}>

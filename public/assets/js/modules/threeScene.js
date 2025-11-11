@@ -2,8 +2,8 @@
 // ใช้คู่กับ import map ใน designer.html ที่ชี้ไป three.module.js และ OrbitControls.js (ไฟล์ local)
 // โครงสร้างโมดูล: export ฟังก์ชัน init3D(container, opts?) -> คืน { build, dispose, scene, camera, renderer }
 
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import * as THREE from '/ai-house-designer/assets/vendor/three/three.module.js';
+import { OrbitControls } from '/ai-house-designer/assets/vendor/three/OrbitControls.module.js';
 
 /** คำนวณขนาดตัวบ้านจากขนาดที่ดินแบบง่ายๆ */
 function baseDims(plotW, plotL) {
